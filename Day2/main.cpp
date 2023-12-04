@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstdio>
+#include <vector>
 #include "../common/mmap.hpp"
 
 #define isdigit(c) ((c) >= '0' && (c) <= '9')

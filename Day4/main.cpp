@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <vector>
 #include "../common/mmap.hpp"
 
 #define isdigit(c) ((c) >= '0' && (c) <= '9')
@@ -69,7 +70,7 @@ int main(int argc, char** argv)
     int sum1 = 0;
 
     for (uint8_t c : cards)
-        sum1 += (1U << (c - 1));
+        sum1 += (c ? (1U << (c - 1)) : 0);
 
     printf("%d\n", sum1);
 
