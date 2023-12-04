@@ -16,15 +16,16 @@ struct GrabResult
 int main(int argc, char** argv)
 {
     auto file = mmap_file::open_ro("input.txt");
+    const int fileSize = static_cast<int>(file.size());
 
     std::vector<GrabResult> games;
     games.reserve(512);
     
     int lineIdx = 0;
-    while (lineIdx < file.size())
+    while (lineIdx < fileSize)
     {
         const int lineStart = lineIdx;
-        for (; lineIdx < file.size(); ++lineIdx)
+        for (; lineIdx < fileSize; ++lineIdx)
         {
             if (file.data()[lineIdx] == '\n')
                 break;
@@ -38,7 +39,7 @@ int main(int argc, char** argv)
 
         const size_t lineLength = line.size();
         size_t colonIdx = 0;
-        while (colonIdx < line.size() && line[colonIdx] != ':')
+        while (colonIdx < lineLength && line[colonIdx] != ':')
             ++colonIdx;
 
         size_t idx = colonIdx + 2;

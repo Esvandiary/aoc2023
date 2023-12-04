@@ -10,6 +10,7 @@
 int main(int argc, char** argv)
 {
     auto file = mmap_file::open_ro("input.txt");
+    const int fileSize = static_cast<int>(file.size());
 
     std::vector<uint8_t> cards;
     cards.reserve(1024);
@@ -17,10 +18,10 @@ int main(int argc, char** argv)
 
     int lineIdx = 0;
     int lineNum = 0;
-    while (lineIdx < file.size())
+    while (lineIdx < fileSize)
     {
         const int lineStart = lineIdx;
-        for (; lineIdx < file.size(); ++lineIdx)
+        for (; lineIdx < fileSize; ++lineIdx)
         {
             if (file.data()[lineIdx] == '\n')
                 break;
@@ -74,7 +75,7 @@ int main(int argc, char** argv)
     int sum1 = 0;
 
     for (uint8_t c : cards)
-        sum1 += (c ? (1U << (c - 1)) : 0);
+        sum1 += (1U << c) >> 1;
 
     printf("%d\n", sum1);
 

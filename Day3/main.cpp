@@ -12,10 +12,11 @@
 int main(int argc, char** argv)
 {
     auto file = mmap_file::open_ro("input.txt");
+    const int textLength = file.size();
 
     // get line length
     int lineLength = 0;
-    for (int i = 0; i < file.size(); ++i)
+    for (int i = 0; i < textLength; ++i)
     {
         if (file.data()[i] == '\n')
         {
@@ -23,7 +24,6 @@ int main(int argc, char** argv)
             break;
         }
     }
-    const int textLength = file.size();
     const int lineCount = (int)round((float)textLength / (lineLength + 1));
     
     bool* numbers = (bool*)calloc(textLength, sizeof(bool));

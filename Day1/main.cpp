@@ -3,22 +3,6 @@
 
 #define isdigit(c) ((c) >= '0' && (c) <= '9')
 
-static inline char FirstDigit(const view<chartype> s)
-{
-    for (int i = 0; i < s.size(); ++i)
-        if (isdigit(s[i]))
-            return s[i] - '0';
-    return 0;
-}
-
-static inline char LastDigit(const view<chartype> s)
-{
-    for (int i = s.size() - 1; i >= 0; --i)
-        if (isdigit(s[i]))
-            return s[i] - '0';
-    return 0;
-}
-
 struct LookResult
 {
     int16_t digit;
@@ -229,6 +213,7 @@ digitonly:
 int main(int argc, char** argv)
 {
     auto file = mmap_file::open_ro("input.txt");
+    const int fileSize = static_cast<int>(file.size());
 
     //
     // Part 1 + 2
@@ -236,10 +221,10 @@ int main(int argc, char** argv)
 
     int sum1 = 0, sum2 = 0;
     int idx = 0;
-    while (idx < file.size())
+    while (idx < fileSize)
     {
         const int lineStart = idx;
-        for (; idx < file.size(); ++idx)
+        for (; idx < fileSize; ++idx)
         {
             if (file.data()[idx] == '\n')
                 break;
