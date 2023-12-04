@@ -6,7 +6,7 @@ if [[ $# -lt 1 ]]; then
    exit 0
 fi
 
-if [[ -d "${1}" ]]; then
+if [[ -d "Day${1}" ]]; then
     cd Day${1}
     dotnet publish -o publish_dir -c Release
     time publish_dir/Day${1}
