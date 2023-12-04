@@ -1,7 +1,7 @@
-FROM mcr.microsoft.com/dotnet/sdk:8.0
+FROM debian:latest
 
 RUN apt update
-RUN apt install -y clang zlib1g-dev
+RUN apt install -y cmake build-essential
 
 ADD entrypoint.sh /entrypoint.sh
 RUN chmod +x entrypoint.sh
