@@ -18,6 +18,7 @@ int main(int argc, char** argv)
     auto file = mmap_file::open_ro("input.txt");
 
     std::vector<GrabResult> games;
+    games.reserve(512);
     
     int lineIdx = 0;
     while (lineIdx < file.size())
@@ -53,7 +54,6 @@ int main(int argc, char** argv)
             }
             // space
             ++idx;
-            uint16_t redCount = 0, greenCount = 0, blueCount = 0;
             switch (line[idx])
             {
                 case 'r':
