@@ -1,26 +1,30 @@
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <cstdlib>
-#include <fstream>
-#include <string>
-#include <vector>
+#include "../common/mmap.hpp"
 
 #define isdigit(c) ((c) >= '0' && (c) <= '9')
 
+#define dataindex(y, x) ((y * (lineLength + 1)) + x)
+
 int main(int argc, char** argv)
 {
-    std::ifstream file("input.txt");
-    std::vector<std::string> lines;
+    auto file = mmap_file::open_ro("input.txt");
+
+    // get line length
+    int lineLength = 0;
+    for (int i = 0; i < file.size(); ++i)
     {
-        std::string line;
-        while (std::getline(file, line))
-            lines.emplace_back(std::move(line));
+        if (file.data()[i] == '\n')
+        {
+            lineLength = i;
+            break;
+        }
     }
-
-    const int lineLength = lines[0].length();
-    const int lineCount = lines.size();
-    const int textLength = lineCount * lineLength;
-
+    const int textLength = file.size();
+    const int lineCount = (int)round((float)textLength / (lineLength + 1));
+    
     bool* numbers = (bool*)calloc(textLength, sizeof(bool));
     bool* symbols = (bool*)calloc(textLength, sizeof(bool));
     std::vector<int> gears;
@@ -30,15 +34,16 @@ int main(int argc, char** argv)
     {
         for (int x = 0; x < lineLength; ++x)
         {
-            int idx = (y * lineLength) + x;
-            if (isdigit(lines[y][x]))
+            const int idx = (y * lineLength) + x;
+            char c = file.data()[dataindex(y, x)];
+            if (isdigit(c))
             {
                 numbers[idx] = true;
             }
-            else if (lines[y][x] != '.')
+            else if (c != '.')
             {
                 symbols[idx] = true;
-                if (lines[y][x] == '*')
+                if (c == '*')
                     gears.push_back(y * lineLength + x);
             }
         }
@@ -61,7 +66,7 @@ int main(int argc, char** argv)
             while (x < lineLength && numbers[idx])
             {
                 num *= 10;
-                num += lines[y][x] - '0';
+                num += file.data()[dataindex(y, x)] - '0';
                 ++x;
                 ++idx;
             }
@@ -127,7 +132,7 @@ int main(int argc, char** argv)
                     while (endX < lineLength && numbers[(cy * lineLength) + endX])
                     {
                         num *= 10;
-                        num += lines[cy][endX] - '0';
+                        num += file.data()[dataindex(cy, endX)] - '0';
                         ++endX;
                     }
 
