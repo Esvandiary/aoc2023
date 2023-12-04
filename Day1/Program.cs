@@ -1,6 +1,4 @@
-﻿using System.Text.RegularExpressions;
-
-var lines = File.ReadAllLines("input.txt");
+﻿var lines = File.ReadAllLines("input.txt");
 int sum1 = 0;
 
 //
@@ -20,47 +18,108 @@ Console.WriteLine(sum1);
 //
 // Part 2
 //
-int LookupNumber(string s)
+int LookForward(string line)
 {
-    switch (s[0])
+    for (int i = 0; i < line.Length; ++i)
     {
-        case 'z': return 0;
-        case 'o': return 1;
-        case 't': return (s.Length == 3) ? 2 : 3;
-        case 'f': return (s[1] == 'o') ? 4 : 5;
-        case 's': return (s.Length == 3) ? 6 : 7;
-        case 'e': return 8;
-        case 'n': return 9;
-        default: return 0;
+        switch (line[i])
+        {
+            case >= '0' and <= '9':
+                return (line[i] - '0');
+            case 'o':
+                if (i + 2 < line.Length && line[i + 1] == 'n' && line[i + 2] == 'e')
+                    return 1;
+                break;
+            case 't':
+                if (i + 2 < line.Length && line[i + 1] == 'w' && line[i + 2] == 'o')
+                    return 2;
+                else if (i + 4 < line.Length && line[i + 1] == 'h' && line[i + 2] == 'r' && line[i + 3] == 'e' && line[i + 4] == 'e')
+                    return 3;
+                break;
+            case 'f':
+                if (i + 3 < line.Length)
+                {
+                    if (line[i + 1] == 'o' && line[i + 2] == 'u' && line[i + 3] == 'r')
+                        return 4;
+                    else if (line[i + 1] == 'i' && line[i + 2] == 'v' && line[i + 3] == 'e')
+                        return 5;
+                }
+                break;
+            case 's':
+                if (i + 2 < line.Length && line[i + 1] == 'i' && line[i + 2] == 'x')
+                    return 6;
+                else if (i + 4 < line.Length && line[i + 1] == 'e' && line[i + 2] == 'v' && line[i + 3] == 'e' && line[i + 4] == 'n')
+                    return 7;
+                break;
+            case 'e':
+                if (i + 4 < line.Length && line[i + 1] == 'i' && line[i + 2] == 'g' && line[i + 3] == 'h' && line[i + 4] == 't')
+                    return 8;
+                break;
+            case 'n':
+                if (i + 3 < line.Length && line[i + 1] == 'i' && line[i + 2] == 'n' && line[i + 3] == 'e')
+                    return 9;
+                break;
+            default:
+                break;
+        }
     }
+    return -1;
 }
 
-var re2 = new Regex("^.*?([0-9]|one|two|three|four|five|six|seven|eight|nine).*([0-9]|one|two|three|four|five|six|seven|eight|nine).*?$", RegexOptions.Compiled);
-var re1 = new Regex("^.*?([0-9]|one|two|three|four|five|six|seven|eight|nine).*$", RegexOptions.Compiled);
+int LookBackward(string line)
+{
+    for (int i = line.Length - 1; i >= 0; --i)
+    {
+        switch (line[i])
+        {
+            case >= '0' and <= '9':
+                return (line[i] - '0');
+            case 'e':
+                if (i >= 2 && line[i - 1] == 'n' && line[i - 2] == 'o')
+                    return 1;
+                else if (i >= 4 && line[i - 1] == 'e' && line[i - 2] == 'r' && line[i - 3] == 'h' && line[i - 4] == 't')
+                    return 3;
+                else if (i >= 3 && line[i - 1] == 'v' && line[i - 2] == 'i' && line[i - 3] == 'f')
+                    return 5;
+                else if (i >= 3 && line[i - 1] == 'n' && line[i - 2] == 'i' && line[i - 3] == 'n')
+                    return 9;
+                break;
+            case 'o':
+                if (i >= 2 && line[i - 1] == 'w' && line[i - 2] == 't')
+                    return 2;
+                break;
+            case 'r':
+                if (i >= 3 && line[i - 1] == 'u' && line[i - 2] == 'o' && line[i - 3] == 'f')
+                    return 4;
+                break;
+            case 'x':
+                if (i >= 2 && line[i - 1] == 'i' && line[i - 2] == 's')
+                    return 6;
+                break;
+            case 'n':
+                if (i >= 4 && line[i - 1] == 'e' && line[i - 2] == 'v' && line[i - 3] == 'e' && line[i - 4] == 's')
+                    return 7;
+                break;
+            case 't':
+                if (i >= 4 && line[i - 1] == 'h' && line[i - 2] == 'g' && line[i - 3] == 'i' && line[i-4] == 'e')
+                    return 8;
+                break;
+            default:
+                break;
+        }
+    }
+    return -1;
+}
 
 int sum2 = 0;
 foreach (var line in lines)
 {
-    var m = re2.Match(line);
-    if (m.Success)
-    {
-        int n1 = (m.Groups[1].Value.Length == 1) ? (m.Groups[1].Value[0] - '0') : LookupNumber(m.Groups[1].Value);
-        int n2 = (m.Groups[2].Length == 1) ? (m.Groups[2].Value[0] - '0') : LookupNumber(m.Groups[2].Value);
-        sum2 += (10 * n1) + n2;
-    }
+    int fwd = LookForward(line);
+    int bkd = LookBackward(line);
+    if (fwd != -1 && bkd != -1)
+        sum2 += (10 * fwd) + bkd;
     else
-    {
-        m = re1.Match(line);
-        if (m.Success)
-        {
-            int n1 = (m.Groups[1].Value.Length == 1) ? (m.Groups[1].Value[0] - '0') : LookupNumber(m.Groups[1].Value);
-            sum2 += (10 * n1) + n1;
-        }
-        else
-        {
-            Console.WriteLine($"regex failed for line: {line}");
-        }
-    }
+        Console.WriteLine($"lookup failed for line: {line}");
 }
 
 Console.WriteLine(sum2);
