@@ -59,22 +59,20 @@ int main(int argc, char** argv)
             {
                 case 'r':
                     current.RedCount = (std::max)(current.RedCount, num);
-                    idx += 3;
+                    idx += 5; // 'red[,;] '
                     break;
                 case 'g':
                     current.GreenCount = (std::max)(current.GreenCount, num);
-                    idx += 5;
+                    idx += 7; // 'green[,;] '
                     break;
                 case 'b':
                     current.BlueCount = (std::max)(current.BlueCount, num);
-                    idx += 4;
+                    idx += 6; // 'blue[,;] '
                     break;
                 default:
                     printf("unexpected input from line\n");
                     return 1;
             }
-            // space
-            idx += 2;
         }
         games.push_back(current);
 
@@ -88,8 +86,8 @@ int main(int argc, char** argv)
     int sum1 = 0;
     for (int i = 0; i < games.size(); ++i)
     {
-        if (games[i].RedCount <= 12 && games[i].GreenCount <= 13 && games[i].BlueCount <= 14)
-            sum1 += (i + 1);
+        const int mask = ((games[i].RedCount - 13) & (games[i].GreenCount - 14) & (games[i].BlueCount - 15)) >> 31;
+        sum1 += (i + 1) & mask;
     }
 
     printf("%d\n", sum1);
