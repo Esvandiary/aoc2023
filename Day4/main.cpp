@@ -12,6 +12,7 @@ int main(int argc, char** argv)
     auto file = mmap_file::open_ro("input.txt");
 
     std::vector<uint8_t> cards;
+    cards.reserve(1024);
     bool winning[100];
 
     int lineIdx = 0;
@@ -34,11 +35,14 @@ int main(int argc, char** argv)
         memset(winning, 0, sizeof(winning));
         uint8_t matchCount = 0;
 
-        int idx = 10; // 'Card NNN: '
-        for (int i = 0; i < 10; ++i)
+        int idx = 0;
+        while (idx < line.size() && line[idx] != ':')
+            ++idx;
+        idx += 2; // ': '
+        while (idx < line.size() && line[idx] != '|')
         {
             int num = 0;
-            if (line[idx] >= '0' && line[idx] <= '9')
+            if (isdigit(line[idx]))
                 num += (uint8_t)(10 * (line[idx] - '0'));
             ++idx;
             num += (uint8_t)(line[idx] - '0');
@@ -46,10 +50,10 @@ int main(int argc, char** argv)
             idx += 2;
         }
         idx += 2; // '| '
-        for (int i = 0; i < 25; ++i)
+        while (idx < line.size())
         {
             int num = 0;
-            if (line[idx] >= '0' && line[idx] <= '9')
+            if (isdigit(line[idx]))
                 num += (uint8_t)(10 * (line[idx] - '0'));
             ++idx;
             num += (uint8_t)(line[idx] - '0');
@@ -94,3 +98,4 @@ int main(int argc, char** argv)
 
     return 0;
 }
+
