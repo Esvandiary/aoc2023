@@ -9,7 +9,9 @@
 
 #define MMAPFILE_AVAILABLE
 
-#define NOMINMAX
+#if !defined(NOMINMAX)
+    #define NOMINMAX
+#endif
 #include <windows.h>
 
 struct mmap_file

@@ -38,11 +38,11 @@ int main(int argc, char** argv)
         const view<chartype> line = file.slice(lineStart, lineIdx - lineStart);
 
         const size_t lineLength = line.size();
-        size_t colonIdx = 0;
-        while (colonIdx < lineLength && line[colonIdx] != ':')
-            ++colonIdx;
+        size_t idx = 0;
+        while (idx < lineLength && line[idx] != ':')
+            ++idx;
+        idx += 2;
 
-        size_t idx = colonIdx + 2;
         GrabResult current;
         while (idx < lineLength)
         {
@@ -55,6 +55,7 @@ int main(int argc, char** argv)
             }
             // space
             ++idx;
+            // colour
             switch (line[idx])
             {
                 case 'r':

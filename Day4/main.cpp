@@ -32,15 +32,16 @@ int main(int argc, char** argv)
             continue;
         }
         const view<chartype> line = file.slice(lineStart, lineIdx - lineStart);
+        const int lineSize = static_cast<int>(line.size());
 
         memset(winning, 0, sizeof(winning));
         uint8_t matchCount = 0;
 
         int idx = 0;
-        while (idx < line.size() && line[idx] != ':')
+        while (idx < lineSize && line[idx] != ':')
             ++idx;
         idx += 2; // ': '
-        while (idx < line.size() && line[idx] != '|')
+        while (idx < lineSize && line[idx] != '|')
         {
             int num = 0;
             if (isdigit(line[idx]))
@@ -51,7 +52,7 @@ int main(int argc, char** argv)
             idx += 2;
         }
         idx += 2; // '| '
-        while (idx < line.size())
+        while (idx < lineSize)
         {
             int num = 0;
             if (isdigit(line[idx]))
