@@ -9,16 +9,16 @@ static inline char FirstDigit(const std::string& s)
 {
     for (auto it = s.begin(); it != s.end(); ++it)
         if (isdigit(*it))
-            return *it;
-    return '\0';
+            return *it - '0';
+    return 0;
 }
 
 static inline char LastDigit(const std::string& s)
 {
     for (auto it = s.rbegin(); it != s.rend(); ++it)
         if (isdigit(*it))
-            return *it;
-    return '\0';
+            return *it - '0';
+    return 0;
 }
 
 static int LookForward(const std::string& line)
@@ -145,32 +145,24 @@ int main(int argc, char** argv)
     }
 
     //
-    // Part 1
+    // Part 1 + 2
     //
 
-    int sum1 = 0;
+    int sum1 = 0, sum2 = 0;
     for (const auto& line : lines)
     {
+        // Part 1
         char c1 = FirstDigit(line);
         char c2 = LastDigit(line);
-        if (c1 != 0 && c2 != 0)
-            sum1 += (10 * (c1 - '0')) + (c2 - '0');
-    }
+        sum1 += (10 * c1) + c2;
 
-    printf("%d\n", sum1);
-
-    //
-    // Part 2
-    //
-
-    int sum2 = 0;
-    for (const auto& line : lines)
-    {
+        // Part 2
         int fwd = LookForward(line);
         int bkd = LookBackward(line);
         sum2 += (10 * fwd) + bkd;
     }
 
+    printf("%d\n", sum1);
     printf("%d\n", sum2);
 
     return 0;
