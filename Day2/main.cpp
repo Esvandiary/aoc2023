@@ -1,51 +1,46 @@
 #include <algorithm>
 #include <cstdint>
-#include <fstream>
-#include <string>
-#include <vector>
+#include <cstdio>
+#include "../common/mmap.hpp"
 
 #define isdigit(c) ((c) >= '0' && (c) <= '9')
 
 struct GrabResult
 {
-    uint16_t RedCount;
-    uint16_t GreenCount;
-    uint16_t BlueCount;
+    uint16_t RedCount = 0;
+    uint16_t GreenCount = 0;
+    uint16_t BlueCount = 0;
 };
-
-static bool IsOK(const std::vector<std::vector<GrabResult>>& game, short maxRed, short maxGreen, short maxBlue)
-{
-    for (const auto& grabs : game)
-    {
-        for (const auto& grab : grabs)
-        {
-            if (grab.RedCount > maxRed || grab.GreenCount > maxGreen || grab.BlueCount > maxBlue)
-                return false;
-        }
-    }
-    return true;
-}
 
 int main(int argc, char** argv)
 {
-    std::ifstream file("input.txt");
-    std::vector<std::string> lines;
-    {
-        std::string line;
-        while (std::getline(file, line))
-            lines.emplace_back(std::move(line));
-    }
+    auto file = mmap_file::open_ro("input.txt");
 
-    std::vector<std::vector<std::vector<GrabResult>>> games;
-    games.reserve(lines.size());
-    for (const auto& line : lines)
+    std::vector<GrabResult> games;
+    
+    int lineIdx = 0;
+    while (lineIdx < file.size())
     {
-        const size_t lineLength = line.length();
-        size_t colonIdx = line.find_first_of(':');
+        const int lineStart = lineIdx;
+        for (; lineIdx < file.size(); ++lineIdx)
+        {
+            if (file.data()[lineIdx] == '\n')
+                break;
+        }
+        if (UNLIKELY(lineIdx - lineStart < 2))
+        {
+            ++lineIdx;
+            continue;
+        }
+        const view<chartype> line = file.slice(lineStart, lineIdx - lineStart);
+
+        const size_t lineLength = line.size();
+        size_t colonIdx = 0;
+        while (colonIdx < line.size() && line[colonIdx] != ':')
+            ++colonIdx;
 
         size_t idx = colonIdx + 2;
-        std::vector<std::vector<GrabResult>> grabs;
-        std::vector<GrabResult> current;
+        GrabResult current;
         while (idx < lineLength)
         {
             // number
@@ -61,29 +56,27 @@ int main(int argc, char** argv)
             switch (line[idx])
             {
                 case 'r':
-                    redCount = num;
+                    current.RedCount = (std::max)(current.RedCount, num);
                     idx += 3;
                     break;
                 case 'g':
-                    greenCount = num;
+                    current.GreenCount = (std::max)(current.GreenCount, num);
                     idx += 5;
                     break;
                 case 'b':
-                    blueCount = num;
+                    current.BlueCount = (std::max)(current.BlueCount, num);
                     idx += 4;
                     break;
                 default:
-                    printf("unexpected input from line: %s\n", line.c_str());
+                    printf("unexpected input from line\n");
                     return 1;
             }
-
-            current.push_back(GrabResult { redCount, greenCount, blueCount });
-            if (idx >= lineLength || line[idx] == ';')
-                grabs.push_back(std::move(current));
             // space
             idx += 2;
         }
-        games.push_back(std::move(grabs));
+        games.push_back(current);
+
+        ++lineIdx;
     }
 
     //
@@ -93,7 +86,7 @@ int main(int argc, char** argv)
     int sum1 = 0;
     for (int i = 0; i < games.size(); ++i)
     {
-        if (IsOK(games[i], 12, 13, 14))
+        if (games[i].RedCount <= 12 && games[i].GreenCount <= 13 && games[i].BlueCount <= 14)
             sum1 += (i + 1);
     }
 
@@ -106,18 +99,7 @@ int main(int argc, char** argv)
     int sum2 = 0;
     for (const auto& game : games)
     {
-        uint16_t maxRed = 0, maxGreen = 0, maxBlue = 0;
-        for (const auto& grabs : game)
-        {
-            for (const auto& grab : grabs)
-            {
-                maxRed = (std::max)(maxRed, grab.RedCount);
-                maxGreen = (std::max)(maxGreen, grab.GreenCount);
-                maxBlue = (std::max)(maxBlue, grab.BlueCount);
-            }
-        }
-
-        sum2 += (maxRed * maxGreen * maxBlue);
+        sum2 += (game.RedCount * game.GreenCount * game.BlueCount);
     }
 
     printf("%d\n", sum2);

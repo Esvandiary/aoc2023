@@ -1,29 +1,27 @@
 #include <algorithm>
-#include <fstream>
-#include <string>
-#include <vector>
+#include "../common/mmap.hpp"
 
 #define isdigit(c) ((c) >= '0' && (c) <= '9')
 
-static inline char FirstDigit(const std::string& s)
+static inline char FirstDigit(const view<chartype> s)
 {
-    for (auto it = s.begin(); it != s.end(); ++it)
-        if (isdigit(*it))
-            return *it - '0';
+    for (int i = 0; i < s.size(); ++i)
+        if (isdigit(s[i]))
+            return s[i] - '0';
     return 0;
 }
 
-static inline char LastDigit(const std::string& s)
+static inline char LastDigit(const view<chartype> s)
 {
-    for (auto it = s.rbegin(); it != s.rend(); ++it)
-        if (isdigit(*it))
-            return *it - '0';
+    for (int i = s.size() - 1; i >= 0; --i)
+        if (isdigit(s[i]))
+            return s[i] - '0';
     return 0;
 }
 
-static int LookForward(const std::string& line)
+static int LookForward(const view<chartype> line)
 {
-    const size_t lineLength = line.length();
+    const size_t lineLength = line.size();
     for (int i = 0; i < lineLength; ++i)
     {
         switch (line[i])
@@ -79,9 +77,9 @@ static int LookForward(const std::string& line)
     return 0;
 }
 
-static int LookBackward(const std::string& line)
+static int LookBackward(const view<chartype> line)
 {
-    const size_t lineLength = line.length();
+    const size_t lineLength = line.size();
     for (int i = lineLength - 1; i >= 0; --i)
     {
         switch (line[i])
@@ -136,21 +134,29 @@ static int LookBackward(const std::string& line)
 
 int main(int argc, char** argv)
 {
-    std::ifstream file("input.txt");
-    std::vector<std::string> lines;
-    {
-        std::string line;
-        while (std::getline(file, line))
-            lines.emplace_back(std::move(line));
-    }
+    auto file = mmap_file::open_ro("input.txt");
 
     //
     // Part 1 + 2
     //
 
     int sum1 = 0, sum2 = 0;
-    for (const auto& line : lines)
+    int idx = 0;
+    while (idx < file.size())
     {
+        const int lineStart = idx;
+        for (; idx < file.size(); ++idx)
+        {
+            if (file.data()[idx] == '\n')
+                break;
+        }
+        if (UNLIKELY(idx - lineStart < 2))
+        {
+            ++idx;
+            continue;
+        }
+        const view<chartype> line = file.slice(lineStart, idx - lineStart);
+
         // Part 1
         char c1 = FirstDigit(line);
         char c2 = LastDigit(line);
@@ -160,6 +166,8 @@ int main(int argc, char** argv)
         int fwd = LookForward(line);
         int bkd = LookBackward(line);
         sum2 += (10 * fwd) + bkd;
+
+        ++idx;
     }
 
     printf("%d\n", sum1);
