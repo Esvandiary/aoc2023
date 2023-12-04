@@ -8,6 +8,8 @@ fi
 
 if [[ -d "Day${1}" ]]; then
     cd Day${1}
-    dotnet publish -o publish_dir -c Release
+    if [ "publish_dir/Day{$1}" -nt "Program.cs" ]; then
+        dotnet publish -o publish_dir -c Release
+    fi
     time publish_dir/Day${1}
 fi

@@ -2,7 +2,7 @@
 
 set -e
 
-IMAGE=esvandiary/aoc2023
+IMAGE=esvandiary/aoc2023:1
 
 docker image inspect "${IMAGE}" >/dev/null 2>&1 || docker build .docker -t "${IMAGE}"
 
