@@ -13,15 +13,15 @@ foreach (var line in lines)
     while (idx < line.Length)
     {
         // number
-        int num = 0;
+        short num = 0;
         while (char.IsDigit(line[idx]))
         {
             num *= 10;
-            num += (line[idx++] - '0');
+            num += (short)(line[idx++] - '0');
         }
         // space
         ++idx;
-        int redCount = 0, greenCount = 0, blueCount = 0;
+        short redCount = 0, greenCount = 0, blueCount = 0;
         switch (line[idx])
         {
             case 'r':
@@ -56,7 +56,7 @@ foreach (var line in lines)
 // Part 1
 //
 
-bool IsOK(List<GrabResult> grabs, int maxRed, int maxGreen, int maxBlue)
+bool IsOK(List<GrabResult> grabs, short maxRed, short maxGreen, short maxBlue)
 {
     foreach (var grab in grabs)
     {
@@ -97,14 +97,9 @@ Console.WriteLine(sum2);
 
 struct GrabResult
 {
-    public int RedCount;
-    public int GreenCount;
-    public int BlueCount;
-
-    public override string ToString()
-    {
-        return $"{Math.Max(RedCount, Math.Max(GreenCount, BlueCount))} {((RedCount > 0) ? "Red" : (GreenCount > 0) ? "Green" : "Blue")}";
-    }
+    public short RedCount;
+    public short GreenCount;
+    public short BlueCount;
 }
 
 struct Game
