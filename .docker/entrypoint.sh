@@ -7,9 +7,12 @@ if [[ $# -lt 1 ]]; then
 fi
 
 if [[ -d "Day${1}" ]]; then
-    cd Day${1}
-    if [ "publish_dir/Day{$1}" -nt "Program.cs" ]; then
-        dotnet publish -o publish_dir -c Release
+    cd "Day${1}"
+    if [[ ! -d "build" ]]; then
+        cmake . --preset=makefiles
     fi
-    time publish_dir/Day${1}
+    if [[ ! -f "build/Day${1}" || "main.cpp" -nt "build/Day${1}" ]]; then
+        cmake --build . --preset=makefiles
+    fi
+    time build/Day${1}
 fi
