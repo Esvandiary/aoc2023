@@ -12,7 +12,7 @@ if [[ -d "Day${1}" ]]; then
         cmake . --preset=makefiles
     fi
     if [[ ! -f "build/Day${1}" || "main.cpp" -nt "build/Day${1}" ]]; then
-        cmake --build . --preset=makefiles
+        cmake --build --preset=makefiles
     fi
     time build/Day${1}
 fi
