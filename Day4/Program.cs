@@ -2,11 +2,11 @@
 
 var lines = File.ReadAllLines("input.txt");
 
-List<Card> cards = new(lines.Length);
+List<byte> cards = new(lines.Length);
 foreach (var line in lines)
 {
     bool[] winning = new bool[100];
-    byte[] played = new byte[25];
+    byte matchCount = 0;
 
     int idx = 10; // 'Card NNN: '
     for (int i = 0; i < 10; ++i)
@@ -22,14 +22,18 @@ foreach (var line in lines)
     idx += 2; // '| '
     for (int i = 0; i < 25; ++i)
     {
+        int num = 0;
         if (line[idx] >= '0' && line[idx] <= '9')
-            played[i] += (byte)(10 * (line[idx] - '0'));
+            num += (byte)(10 * (line[idx] - '0'));
         ++idx;
-        played[i] += (byte)(line[idx] - '0');
+        num += (byte)(line[idx] - '0');
         idx += 2;
+
+        if (winning[num])
+            ++matchCount;
     }
 
-    cards.Add(new Card(winning, played));
+    cards.Add(matchCount);
 }
 
 //
@@ -37,12 +41,8 @@ foreach (var line in lines)
 //
 
 int sum1 = 0;
-foreach (var card in cards)
-{
-    card.MatchCount = (byte)card.PlayedNumbers.Count(p => card.WinningNumbers[p]);
-    card.Score = unchecked((ushort)(1U << (card.MatchCount - 1)));
-    sum1 += card.Score;
-}
+foreach (var matchCount in cards)
+    sum1 += unchecked((ushort)(1U << (matchCount - 1)));
 
 Console.WriteLine(sum1);
 
@@ -54,28 +54,10 @@ long[] counts = new long[cards.Count];
 for (int i = 0; i < cards.Count; ++i)
 {
     counts[i] += 1;
-    for (int ni = 1; i + ni < cards.Count && ni <= cards[i].MatchCount; ++ni)
+    for (int ni = 1; i + ni < cards.Count && ni <= cards[i]; ++ni)
         counts[i + ni] += counts[i];
 }
 
 long sum2 = counts.Sum();
 
 Console.WriteLine(sum2);
-
-//
-// Structs
-//
-
-class Card
-{
-    public Card(bool[] winning, byte[] played)
-    {
-        WinningNumbers = winning;
-        PlayedNumbers = played;
-    }
-
-    public bool[] WinningNumbers;
-    public byte[] PlayedNumbers;
-    public byte MatchCount;
-    public ushort Score;
-}
