@@ -4,8 +4,8 @@ var lines = File.ReadAllLines("input.txt");
 var lineLength = lines[0].Length;
 var textLength = lines.Length * lineLength;
 
-BitArray numbers = new BitArray(textLength);
-BitArray symbols = new BitArray(textLength);
+bool[] numbers = new bool[textLength];
+bool[] symbols = new bool[textLength];
 List<int> gears = new();
 
 for (int y = 0; y < lines.Length; ++y)
