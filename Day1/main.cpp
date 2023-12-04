@@ -19,10 +19,18 @@ static inline char LastDigit(const view<chartype> s)
     return 0;
 }
 
-static int LookForward(const view<chartype> line)
+struct LookResult
+{
+    int16_t digit;
+    int16_t closest;
+};
+
+static LookResult LookForward(const view<chartype> line)
 {
     const size_t lineLength = line.size();
-    for (int i = 0; i < lineLength; ++i)
+    int16_t letter = -1;
+    int i;
+    for (i = 0; i < lineLength; ++i)
     {
         switch (line[i])
         {
@@ -36,51 +44,95 @@ static int LookForward(const view<chartype> line)
             case '7':
             case '8':
             case '9':
-                return (line[i] - '0');
+                return LookResult {int16_t(line[i] - '0'), int16_t(line[i] - '0')};
             case 'o':
                 if (i + 2 < lineLength && line[i + 1] == 'n' && line[i + 2] == 'e')
-                    return 1;
+                {
+                    letter = 1;
+                    i += 3;
+                    goto digitonly;
+                }
                 break;
             case 't':
                 if (i + 2 < lineLength && line[i + 1] == 'w' && line[i + 2] == 'o')
-                    return 2;
+                {
+                    letter = 2;
+                    i += 3;
+                    goto digitonly;
+                }
                 else if (i + 4 < lineLength && line[i + 1] == 'h' && line[i + 2] == 'r' && line[i + 3] == 'e' && line[i + 4] == 'e')
-                    return 3;
+                {
+                    letter = 3;
+                    i += 5;
+                    goto digitonly;
+                }
                 break;
             case 'f':
                 if (i + 3 < lineLength)
                 {
                     if (line[i + 1] == 'o' && line[i + 2] == 'u' && line[i + 3] == 'r')
-                        return 4;
+                    {
+                        letter = 4;
+                        i += 4;
+                        goto digitonly;
+                    }
                     else if (line[i + 1] == 'i' && line[i + 2] == 'v' && line[i + 3] == 'e')
-                        return 5;
+                    {
+                        letter = 5;
+                        i += 4;
+                        goto digitonly;
+                    }
                 }
                 break;
             case 's':
                 if (i + 2 < lineLength && line[i + 1] == 'i' && line[i + 2] == 'x')
-                    return 6;
+                {
+                    letter = 6;
+                    i += 3;
+                    goto digitonly;
+                }
                 else if (i + 4 < lineLength && line[i + 1] == 'e' && line[i + 2] == 'v' && line[i + 3] == 'e' && line[i + 4] == 'n')
-                    return 7;
+                {
+                    letter = 7;
+                    i += 5;
+                    goto digitonly;
+                }
                 break;
             case 'e':
                 if (i + 4 < lineLength && line[i + 1] == 'i' && line[i + 2] == 'g' && line[i + 3] == 'h' && line[i + 4] == 't')
-                    return 8;
+                {
+                    letter = 8;
+                    i += 5;
+                    goto digitonly;
+                }
                 break;
             case 'n':
                 if (i + 3 < lineLength && line[i + 1] == 'i' && line[i + 2] == 'n' && line[i + 3] == 'e')
-                    return 9;
+                {
+                    letter = 9;
+                    i += 4;
+                    goto digitonly;
+                }
                 break;
             default:
                 break;
         }
     }
-    return 0;
+digitonly:
+    for (; i < lineLength; ++i)
+    {
+        if (isdigit(line[i]))
+            return LookResult {int16_t(line[i] - '0'), letter};
+    }
+    return LookResult {-1, letter};
 }
 
-static int LookBackward(const view<chartype> line)
+static LookResult LookBackward(const view<chartype> line)
 {
     const size_t lineLength = line.size();
-    for (int i = lineLength - 1; i >= 0; --i)
+    int16_t letter = -1;
+    int i;
+    for (i = lineLength - 1; i >= 0; --i)
     {
         switch (line[i])
         {
@@ -94,42 +146,84 @@ static int LookBackward(const view<chartype> line)
             case '7':
             case '8':
             case '9':
-                return (line[i] - '0');
+                return LookResult { int16_t(line[i] - '0'), int16_t(line[i] - '0') };
             case 'e':
                 if (i >= 2 && line[i - 1] == 'n' && line[i - 2] == 'o')
-                    return 1;
+                {
+                    letter = 1;
+                    i -= 3;
+                    goto digitonly;
+                }
                 else if (i >= 4 && line[i - 1] == 'e' && line[i - 2] == 'r' && line[i - 3] == 'h' && line[i - 4] == 't')
-                    return 3;
+                {
+                    letter = 3;
+                    i -= 5;
+                    goto digitonly;
+                }
                 else if (i >= 3 && line[i - 1] == 'v' && line[i - 2] == 'i' && line[i - 3] == 'f')
-                    return 5;
+                {
+                    letter = 5;
+                    i -= 4;
+                    goto digitonly;
+                }
                 else if (i >= 3 && line[i - 1] == 'n' && line[i - 2] == 'i' && line[i - 3] == 'n')
-                    return 9;
+                {
+                    letter = 9;
+                    i -= 4;
+                    goto digitonly;
+                }
                 break;
             case 'o':
                 if (i >= 2 && line[i - 1] == 'w' && line[i - 2] == 't')
-                    return 2;
+                {
+                    letter = 2;
+                    i -= 3;
+                    goto digitonly;
+                }
                 break;
             case 'r':
                 if (i >= 3 && line[i - 1] == 'u' && line[i - 2] == 'o' && line[i - 3] == 'f')
-                    return 4;
+                {
+                    letter = 4;
+                    i -= 4;
+                    goto digitonly;
+                }
                 break;
             case 'x':
                 if (i >= 2 && line[i - 1] == 'i' && line[i - 2] == 's')
-                    return 6;
+                {
+                    letter = 6;
+                    i -= 3;
+                    goto digitonly;
+                }
                 break;
             case 'n':
                 if (i >= 4 && line[i - 1] == 'e' && line[i - 2] == 'v' && line[i - 3] == 'e' && line[i - 4] == 's')
-                    return 7;
+                {
+                    letter = 7;
+                    i -= 5;
+                    goto digitonly;
+                }
                 break;
             case 't':
                 if (i >= 4 && line[i - 1] == 'h' && line[i - 2] == 'g' && line[i - 3] == 'i' && line[i-4] == 'e')
-                    return 8;
+                {
+                    letter = 8;
+                    i -= 5;
+                    goto digitonly;
+                }
                 break;
             default:
                 break;
         }
     }
-    return 0;
+digitonly:
+    for (; i >= 0; --i)
+    {
+        if (isdigit(line[i]))
+            return LookResult {int16_t(line[i] - '0'), letter};
+    }
+    return LookResult {-1, letter};
 }
 
 int main(int argc, char** argv)
@@ -157,15 +251,10 @@ int main(int argc, char** argv)
         }
         const view<chartype> line = file.slice(lineStart, idx - lineStart);
 
-        // Part 1
-        char c1 = FirstDigit(line);
-        char c2 = LastDigit(line);
-        sum1 += (10 * c1) + c2;
-
-        // Part 2
-        int fwd = LookForward(line);
-        int bkd = LookBackward(line);
-        sum2 += (10 * fwd) + bkd;
+        LookResult first = LookForward(line);
+        LookResult last = LookBackward(line);
+        sum1 += (10 * first.digit) + last.digit;
+        sum2 += (10 * first.closest) + last.closest;
 
         ++idx;
     }
