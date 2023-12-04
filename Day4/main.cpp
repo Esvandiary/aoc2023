@@ -2,28 +2,34 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
-#include <fstream>
-#include <string>
-#include <vector>
+#include "../common/mmap.hpp"
 
 #define isdigit(c) ((c) >= '0' && (c) <= '9')
 
 int main(int argc, char** argv)
 {
-    std::ifstream file("input.txt");
-    std::vector<std::string> lines;
-    {
-        std::string line;
-        while (std::getline(file, line))
-            lines.emplace_back(std::move(line));
-    }
-    const int lineCount = lines.size();
+    auto file = mmap_file::open_ro("input.txt");
 
-    uint8_t* cards = (uint8_t*)malloc(sizeof(uint8_t) * lineCount);
+    std::vector<uint8_t> cards;
     bool winning[100];
-    for (int i = 0; i < lineCount; ++i)
+
+    int lineIdx = 0;
+    int lineNum = 0;
+    while (lineIdx < file.size())
     {
-        const auto& line = lines[i];
+        const int lineStart = lineIdx;
+        for (; lineIdx < file.size(); ++lineIdx)
+        {
+            if (file.data()[lineIdx] == '\n')
+                break;
+        }
+        if (UNLIKELY(lineIdx - lineStart < 2))
+        {
+            ++lineIdx;
+            continue;
+        }
+        const view<chartype> line = file.slice(lineStart, lineIdx - lineStart);
+
         memset(winning, 0, sizeof(winning));
         uint8_t matchCount = 0;
 
@@ -52,7 +58,8 @@ int main(int argc, char** argv)
                 ++matchCount;
         }
 
-        cards[i] = matchCount;
+        cards.push_back(matchCount);
+        ++lineNum;
     }
 
     //
@@ -61,8 +68,8 @@ int main(int argc, char** argv)
 
     int sum1 = 0;
 
-    for (int i = 0; i < lineCount; ++i)
-        sum1 += (1U << (cards[i] - 1));
+    for (uint8_t c : cards)
+        sum1 += (1U << (c - 1));
 
     printf("%d\n", sum1);
 
@@ -70,16 +77,16 @@ int main(int argc, char** argv)
     // Part 2
     //
 
-    uint64_t* counts = (uint64_t*)calloc(lineCount, sizeof(uint64_t));
-    for (int i = 0; i < lineCount; ++i)
+    uint64_t* counts = (uint64_t*)calloc(lineNum, sizeof(uint64_t));
+    for (int i = 0; i < lineNum; ++i)
     {
         counts[i] += 1;
-        for (int ni = 1; i + ni < lineCount && ni <= cards[i]; ++ni)
+        for (int ni = 1; i + ni < lineNum && ni <= cards[i]; ++ni)
             counts[i + ni] += counts[i];
     }
 
     uint64_t sum2 = 0;
-    for (int i = 0; i < lineCount; ++i)
+    for (int i = 0; i < lineNum; ++i)
         sum2 += counts[i];
 
     printf("%zu\n", sum2);
