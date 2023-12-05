@@ -4,7 +4,6 @@
 #include "../common/mmap.h"
 #include "../common/vuctor.h"
 
-
 #define isdigit(c) ((c) >= '0' && (c) <= '9')
 
 #define dataindex(y, x) ((y * (lineLength + 1)) + x)

@@ -5,7 +5,6 @@
 #include "../common/mmap.h"
 #include "../common/vuctor.h"
 
-
 #define isdigit(c) ((c) >= '0' && (c) <= '9')
 
 #define MAPPING_COUNT 7

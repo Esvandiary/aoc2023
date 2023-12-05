@@ -1,7 +1,6 @@
 #include <stdint.h>
 #include "../common/mmap.h"
 
-
 #define isdigit(c) ((c) >= '0' && (c) <= '9')
 
 typedef struct ColourResult

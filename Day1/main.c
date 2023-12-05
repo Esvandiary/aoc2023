@@ -1,7 +1,6 @@
 #include "../common/mmap.h"
 #include "../common/view.h"
 
-
 #define isdigit(c) ((c) >= '0' && (c) <= '9')
 
 typedef struct LookResult
