@@ -5,8 +5,8 @@
 
 typedef struct LookResult
 {
-    int16_t digit;
-    int16_t closest;
+    int8_t digit;
+    int8_t closest;
 } LookResult;
 
 static LookResult LookForward(const view* line)
@@ -28,7 +28,7 @@ static LookResult LookForward(const view* line)
             case '7':
             case '8':
             case '9':
-                return (LookResult) { .digit = (int16_t)(line->data[i] & 0xF), .closest = (int16_t)(line->data[i] & 0xF) };
+                return (LookResult) { .digit = (int8_t)(line->data[i] & 0xF), .closest = (int8_t)(line->data[i] & 0xF) };
             case 'o':
                 if (i + 2 < lineLength && line->data[i + 1] == 'n' && line->data[i + 2] == 'e')
                 {
@@ -106,7 +106,7 @@ digitonly:
     for (; i < lineLength; ++i)
     {
         if (isdigit(line->data[i]))
-            return (LookResult) { .digit = (int16_t)(line->data[i] & 0xF), .closest = letter };
+            return (LookResult) { .digit = (int8_t)(line->data[i] & 0xF), .closest = letter };
     }
     return (LookResult) { .digit = -1, .closest = letter };
 }
@@ -130,7 +130,7 @@ static LookResult LookBackward(const view* line)
             case '7':
             case '8':
             case '9':
-                return (LookResult) { .digit = (int16_t)(line->data[i] & 0xF), .closest = (int16_t)(line->data[i] & 0xF) };
+                return (LookResult) { .digit = (int8_t)(line->data[i] & 0xF), .closest = (int8_t)(line->data[i] & 0xF) };
             case 'e':
                 if (i >= 2 && line->data[i - 1] == 'n' && line->data[i - 2] == 'o')
                 {
@@ -205,7 +205,7 @@ digitonly:
     for (; i >= 0; --i)
     {
         if (isdigit(line->data[i]))
-            return (LookResult) { .digit = (int16_t)(line->data[i] & 0xF), .closest = letter };
+            return (LookResult) { .digit = (int8_t)(line->data[i] & 0xF), .closest = letter };
     }
     return (LookResult) { .digit = -1, .closest = letter };
 }
