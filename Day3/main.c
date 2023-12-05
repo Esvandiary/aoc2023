@@ -67,7 +67,7 @@ int main(int argc, char** argv)
             while (x < lineLength && numbers[idx])
             {
                 num *= 10;
-                num += file.data[dataindex(y, x)] - '0';
+                num += file.data[dataindex(y, x)] & 0xF;
                 ++x;
                 ++idx;
             }
@@ -134,7 +134,7 @@ int main(int argc, char** argv)
                     while (endX < lineLength && numbers[(cy * lineLength) + endX])
                     {
                         num *= 10;
-                        num += file.data[dataindex(cy, endX)] - '0';
+                        num += file.data[dataindex(cy, endX)] & 0xF;
                         ++endX;
                     }
 

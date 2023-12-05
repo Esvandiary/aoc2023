@@ -49,7 +49,7 @@ int main(int argc, char** argv)
             while (isdigit(line.data[idx]))
             {
                 num *= 10;
-                num += (line.data[idx++] - '0');
+                num += (line.data[idx++] & 0xF);
             }
             // space
             ++idx;

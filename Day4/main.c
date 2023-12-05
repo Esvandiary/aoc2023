@@ -46,9 +46,9 @@ int main(int argc, char** argv)
         {
             int num = 0;
             if (isdigit(line.data[idx]))
-                num += (uint8_t)(10 * (line.data[idx] - '0'));
+                num += (uint8_t)(10 * (line.data[idx] & 0xF));
             ++idx;
-            num += (uint8_t)(line.data[idx] - '0');
+            num += (uint8_t)(line.data[idx] & 0xF);
             winning[num] = true;
             idx += 2;
         }
@@ -57,9 +57,9 @@ int main(int argc, char** argv)
         {
             int num = 0;
             if (isdigit(line.data[idx]))
-                num += (uint8_t)(10 * (line.data[idx] - '0'));
+                num += (uint8_t)(10 * (line.data[idx] & 0xF));
             ++idx;
-            num += (uint8_t)(line.data[idx] - '0');
+            num += (uint8_t)(line.data[idx] & 0xF);
             idx += 2;
 
             if (winning[num])
