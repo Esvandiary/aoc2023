@@ -1,18 +1,20 @@
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <vector>
-#include "../common/mmap.hpp"
+#include "../common/mmap.h"
+#include "../common/vuctor.h"
 
 #define isdigit(c) ((c) >= '0' && (c) <= '9')
 
 int main(int argc, char** argv)
 {
-    auto file = mmap_file::open_ro("input.txt");
-    const int fileSize = static_cast<int>(file.size());
+    mmap_file file = mmap_file_open_ro("input.txt");
+    const int fileSize = (int)(file.size);
 
-    std::vector<uint8_t> cards;
-    cards.reserve(1024);
+    vuctor cards = VUCTOR_INIT;
+    VUCTOR_RESERVE(cards, uint8_t, 1024);
+
     bool winning[100];
 
     int lineIdx = 0;
@@ -22,7 +24,7 @@ int main(int argc, char** argv)
         const int lineStart = lineIdx;
         for (; lineIdx < fileSize; ++lineIdx)
         {
-            if (file.data()[lineIdx] == '\n')
+            if (file.data[lineIdx] == '\n')
                 break;
         }
         if (UNLIKELY(lineIdx - lineStart < 2))
@@ -30,23 +32,23 @@ int main(int argc, char** argv)
             ++lineIdx;
             continue;
         }
-        const view<chartype> line = file.slice(lineStart, lineIdx - lineStart);
-        const int lineSize = static_cast<int>(line.size());
+        const view line = { .data = file.data + lineStart, .size = lineIdx - lineStart };
+        const int lineSize = (int)(line.size);
 
         memset(winning, 0, sizeof(winning));
         uint8_t matchCount = 0;
 
         int idx = 0;
-        while (idx < lineSize && line[idx] != ':')
+        while (idx < lineSize && line.data[idx] != ':')
             ++idx;
         idx += 2; // ': '
-        while (idx < lineSize && line[idx] != '|')
+        while (idx < lineSize && line.data[idx] != '|')
         {
             int num = 0;
-            if (isdigit(line[idx]))
-                num += (uint8_t)(10 * (line[idx] - '0'));
+            if (isdigit(line.data[idx]))
+                num += (uint8_t)(10 * (line.data[idx] - '0'));
             ++idx;
-            num += (uint8_t)(line[idx] - '0');
+            num += (uint8_t)(line.data[idx] - '0');
             winning[num] = true;
             idx += 2;
         }
@@ -54,17 +56,17 @@ int main(int argc, char** argv)
         while (idx < lineSize)
         {
             int num = 0;
-            if (isdigit(line[idx]))
-                num += (uint8_t)(10 * (line[idx] - '0'));
+            if (isdigit(line.data[idx]))
+                num += (uint8_t)(10 * (line.data[idx] - '0'));
             ++idx;
-            num += (uint8_t)(line[idx] - '0');
+            num += (uint8_t)(line.data[idx] - '0');
             idx += 2;
 
             if (winning[num])
                 ++matchCount;
         }
 
-        cards.push_back(matchCount);
+        VUCTOR_ADD(cards, uint8_t, matchCount);
         ++lineNum;
     }
 
@@ -74,8 +76,8 @@ int main(int argc, char** argv)
 
     int sum1 = 0;
 
-    for (uint8_t c : cards)
-        sum1 += (1U << c) >> 1;
+    for (int i = 0; i < cards.size; ++i)
+        sum1 += (1U << VUCTOR_GET(cards, uint8_t, i)) >> 1;
 
     printf("%d\n", sum1);
 
@@ -87,7 +89,7 @@ int main(int argc, char** argv)
     for (int i = 0; i < lineNum; ++i)
     {
         counts[i] += 1;
-        for (int ni = 1; i + ni < lineNum && ni <= cards[i]; ++ni)
+        for (int ni = 1; i + ni < lineNum && ni <= VUCTOR_GET(cards, uint8_t, i); ++ni)
             counts[i + ni] += counts[i];
     }
 
