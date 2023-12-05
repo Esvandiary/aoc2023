@@ -1,64 +1,40 @@
 #pragma once
 
-#include "common.hpp"
+#include "common.h"
 
-#include <cstring>
+#include <string.h>
 
-template <typename T>
-struct vuctor
+typedef struct vuctor
 {
-    vuctor() noexcept = default;
-    vuctor(const T* start, const T* end) noexcept { assign(start, end); }
+    void* data;
+    size_t size;
+    size_t capacity;
+} vuctor;
 
-    ~vuctor() noexcept { free(_data); }
+#define VUCTOR_GET(v, type, i) (((type*)((v).data))[i])
+#define VUCTOR_ADD(v, type, value) _vuctor_add(&(v), sizeof(type), &(value))
+#define VUCTOR_RESERVE(v, type, capacity) _vuctor_reserve(&(v), sizeof(type), (capacity));
+#define VUCTOR_FREE(v) _vuctor_free(v)
 
-    vuctor(vuctor<T>&& other) noexcept { *this = std::move(other); }
-    vuctor& operator=(vuctor<T>&& other) noexcept
+static inline FORCEINLINE void _vuctor_reserve(vuctor* v, size_t elemSize, size_t capacity)
+{
+    if (capacity > v->capacity)
     {
-        free(_data);
-        _data = other._data;
-        _size = other._size;
-        _capacity = other._capacity;
-        other._data = nullptr;
-        other._size = other._capacity = 0;
-        return *this;
+        v->data = realloc(v->data, capacity * elemSize);
+        v->capacity = capacity;
     }
+}
 
-    vuctor(const vuctor<T>& other) = delete;
-    vuctor& operator=(const vuctor<T>& other) = delete;
+static inline FORCEINLINE void _vuctor_add(vuctor* v, size_t elemSize, void* value)
+{
+    if (v->size >= v->capacity)
+        _vuctor_reserve(v, elemSize, MAX(v->capacity * 8, 32));
+    memcpy((char*)v->data + (elemSize * v->size), value, elemSize);
+    ++v->size;
+}
 
-    void reserve(size_t entries) noexcept
-    {
-        if (_capacity < entries)
-        {
-            DEBUGLOG("going to realloc %zu bytes\n", entries * sizeof(T));
-            _data = (T*)realloc(_data, entries * sizeof(T));
-            _capacity = entries;
-        }
-    }
-
-    void resize(size_t entries) noexcept
-    {
-        reserve(entries);
-        _size = entries;
-    }
-
-    void assign(const T* start, const T* end) noexcept
-    {
-        resize(end - start);
-        memcpy(_data, start, (end - start) * sizeof(T));
-    }
-
-    size_t size() const noexcept { return _size; }
-    size_t capacity() const noexcept { return _capacity; }
-    const T* data() const noexcept { return _data; }
-    T* data() noexcept { return _data; }
-
-    const T& operator[](size_t index) const noexcept { return _data[index]; }
-    T& operator[](size_t index) noexcept { return _data[index]; }
-
-private:
-    T* _data = nullptr;
-    size_t _size = 0;
-    size_t _capacity = 0;
-};
+static inline FORCEINLINE void _vuctor_free(vuctor* v)
+{
+    free(v->data);
+    memset(v, 0, sizeof(vuctor));
+}
