@@ -11,6 +11,8 @@ typedef struct vuctor
     size_t capacity;
 } vuctor;
 
+#define VUCTOR_INIT { .data = NULL, .size = 0, .capacity = 0 };
+
 #define VUCTOR_GET(v, type, i) (((type*)((v).data))[i])
 #define VUCTOR_ADD(v, type, value) _vuctor_add(&(v), sizeof(type), &(value))
 #define VUCTOR_RESERVE(v, type, capacity) _vuctor_reserve(&(v), sizeof(type), (capacity));

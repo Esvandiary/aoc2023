@@ -5,6 +5,6 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-project(Day2)
+project(Day2 C)
 
-add_executable(Day2 "main.cpp")
+add_executable(Day2 "main.c")
