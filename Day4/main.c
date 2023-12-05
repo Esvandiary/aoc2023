@@ -15,69 +15,54 @@ int main(int argc, char** argv)
     vuctor cards = VUCTOR_INIT;
     VUCTOR_RESERVE(cards, uint8_t, 1024);
 
+    int sum1 = 0;
+
     bool winning[100];
 
-    int lineIdx = 0;
+    int idx = 0;
     int lineNum = 0;
-    while (lineIdx < fileSize)
+    while (idx < fileSize)
     {
-        const int lineStart = lineIdx;
-        for (; lineIdx < fileSize; ++lineIdx)
-        {
-            if (file.data[lineIdx] == '\n')
-                break;
-        }
-        if (UNLIKELY(lineIdx - lineStart < 2))
-        {
-            ++lineIdx;
-            continue;
-        }
-        const view line = { .data = file.data + lineStart, .size = lineIdx - lineStart };
-        const int lineSize = (int)(line.size);
-
         memset(winning, 0, sizeof(winning));
         uint8_t matchCount = 0;
 
-        int idx = 0;
-        while (idx < lineSize && line.data[idx] != ':')
+        while (idx < fileSize && file.data[idx] != ':')
             ++idx;
         idx += 2; // ': '
-        while (idx < lineSize && line.data[idx] != '|')
+        while (idx < fileSize && file.data[idx] != '|')
         {
             int num = 0;
-            if (isdigit(line.data[idx]))
-                num += (uint8_t)(10 * (line.data[idx] & 0xF));
+            if (isdigit(file.data[idx]))
+                num += (uint8_t)(10 * (file.data[idx] & 0xF));
             ++idx;
-            num += (uint8_t)(line.data[idx] & 0xF);
+            num += (uint8_t)(file.data[idx] & 0xF);
             winning[num] = true;
             idx += 2;
         }
-        idx += 2; // '| '
-        while (idx < lineSize)
+        idx += 1; // '|'
+        while (idx < fileSize && file.data[idx] != '\n')
         {
-            int num = 0;
-            if (isdigit(line.data[idx]))
-                num += (uint8_t)(10 * (line.data[idx] & 0xF));
             ++idx;
-            num += (uint8_t)(line.data[idx] & 0xF);
-            idx += 2;
+            int num = 0;
+            if (isdigit(file.data[idx]))
+                num += (uint8_t)(10 * (file.data[idx] & 0xF));
+            ++idx;
+            num += (uint8_t)(file.data[idx] & 0xF);
+            ++idx;
 
             if (winning[num])
                 ++matchCount;
         }
 
         VUCTOR_ADD(cards, uint8_t, matchCount);
+        sum1 += (1U << matchCount) >> 1;
+        ++idx;
         ++lineNum;
     }
 
     //
     // Part 1
     //
-
-    int sum1 = 0;
-
-    for (int i = 0; i < cards.size; ++i)
-        sum1 += (1U << VUCTOR_GET(cards, uint8_t, i)) >> 1;
 
     printf("%d\n", sum1);
 
