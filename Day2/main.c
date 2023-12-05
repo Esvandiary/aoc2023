@@ -3,12 +3,15 @@
 
 #define isdigit(c) ((c) >= '0' && (c) <= '9')
 
-typedef struct GrabResult
+typedef struct ColourResult
 {
-    uint16_t RedCount;
-    uint16_t GreenCount;
-    uint16_t BlueCount;
-} GrabResult;
+    int32_t Skip;
+    int32_t Count;
+} ColourResult;
+
+#define CR_R (0x12)
+#define CR_G (0x07)
+#define CR_B (0x02)
 
 int main(int argc, char** argv)
 {
@@ -17,69 +20,49 @@ int main(int argc, char** argv)
 
     int sum1 = 0, sum2 = 0;
 
-    int lineIdx = 0;
-    int lineNum = 1;
-    while (lineIdx < fileSize)
-    {
-        const int lineStart = lineIdx;
-        for (; lineIdx < fileSize; ++lineIdx)
-        {
-            if (file.data[lineIdx] == '\n')
-                break;
-        }
-        if (UNLIKELY(lineIdx - lineStart < 2))
-        {
-            ++lineIdx;
-            ++lineNum;
-            continue;
-        }
-        const view line = { file.data + lineStart, lineIdx - lineStart };
+    ColourResult results[32];
+    results[CR_R].Skip = 3;
+    results[CR_G].Skip = 5;
+    results[CR_B].Skip = 4;
 
-        const size_t lineLength = line.size;
-        size_t idx = 0;
-        while (idx < lineLength && line.data[idx] != ':')
+    int idx = 0;
+    int lineNum = 1;
+    while (idx < fileSize)
+    {
+        results[CR_R].Count = 0;
+        results[CR_G].Count = 0;
+        results[CR_B].Count = 0;
+
+        while (idx < fileSize && file.data[idx] != ':')
             ++idx;
         idx += 2;
 
-        GrabResult current = { .RedCount = 0, .GreenCount = 0, .BlueCount = 0 };
-        while (idx < lineLength)
+        while (idx < fileSize && file.data[idx] != '\n')
         {
             // number
-            uint16_t num = 0;
-            while (isdigit(line.data[idx]))
+            uint32_t num = 0;
+            while (isdigit(file.data[idx]))
             {
                 num *= 10;
-                num += (line.data[idx++] & 0xF);
+                num += (file.data[idx++] & 0xF);
             }
             // space
             ++idx;
             // colour
-            switch (line.data[idx])
-            {
-                case 'r':
-                    current.RedCount = MAX(current.RedCount, num);
-                    idx += 5; // 'red[,;] '
-                    break;
-                case 'g':
-                    current.GreenCount = MAX(current.GreenCount, num);
-                    idx += 7; // 'green[,;] '
-                    break;
-                case 'b':
-                    current.BlueCount = MAX(current.BlueCount, num);
-                    idx += 6; // 'blue[,;] '
-                    break;
-                default:
-                    printf("unexpected input from line\n");
-                    return 1;
-            }
+            const uint8_t ridx = file.data[idx] & 0x1F;
+            results[ridx].Count = MAX(results[ridx].Count, num);
+            idx += results[ridx].Skip;
+            if (file.data[idx] == '\n')
+                break;
+            idx += 2;
         }
 
-        const int mask = ((current.RedCount - 13) & (current.GreenCount - 14) & (current.BlueCount - 15)) >> 31;
+        const int mask = ((results[CR_R].Count - 13) & (results[CR_G].Count - 14) & (results[CR_B].Count - 15)) >> 31;
         sum1 += lineNum & mask;
 
-        sum2 += current.RedCount * current.GreenCount * current.BlueCount;
+        sum2 += results[CR_R].Count * results[CR_G].Count * results[CR_B].Count;
 
-        ++lineIdx;
+        ++idx;
         ++lineNum;
     }
 
