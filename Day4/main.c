@@ -5,6 +5,7 @@
 #include "../common/mmap.h"
 #include "../common/vuctor.h"
 
+
 #define isdigit(c) ((c) >= '0' && (c) <= '9')
 
 int main(int argc, char** argv)
