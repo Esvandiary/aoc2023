@@ -35,10 +35,10 @@ int main(int argc, char** argv)
 
         while (idx < fileSize && file.data[idx] != ':')
             ++idx;
-        idx += 2;
 
         while (idx < fileSize && file.data[idx] != '\n')
         {
+            idx += 2;
             // number
             uint32_t num = 0;
             while (isdigit(file.data[idx]))
@@ -52,9 +52,6 @@ int main(int argc, char** argv)
             const uint8_t ridx = file.data[idx] & 0x1F;
             results[ridx].Count = MAX(results[ridx].Count, num);
             idx += results[ridx].Skip;
-            if (file.data[idx] == '\n')
-                break;
-            idx += 2;
         }
 
         const int mask = ((results[CR_R].Count - 13) & (results[CR_G].Count - 14) & (results[CR_B].Count - 15)) >> 31;
