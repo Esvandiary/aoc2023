@@ -1,4 +1,3 @@
-#include <algorithm>
 #include "../common/mmap.hpp"
 
 #define isdigit(c) ((c) >= '0' && (c) <= '9')

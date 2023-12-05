@@ -1,7 +1,6 @@
-#include <algorithm>
-#include <cstdint>
-#include <cstdlib>
-#include <cstring>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
 #include <vector>
 #include "../common/mmap.hpp"
 
