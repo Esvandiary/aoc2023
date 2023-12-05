@@ -6,3 +6,8 @@ set(CMAKE_C_STANDARD 11)
 project(Day5 C)
 
 add_executable(Day5 "main.c")
+
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -static-libgcc -static -Os")
+set_target_properties(Day5 PROPERTIES LINK_SEARCH_START_STATIC ON)
+set_target_properties(Day5 PROPERTIES LINK_SEARCH_END_STATIC ON)
+target_link_options(Day5 PRIVATE "-static-libgcc")
