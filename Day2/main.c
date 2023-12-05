@@ -1,6 +1,5 @@
 #include <stdint.h>
 #include "../common/mmap.h"
-#include "../common/vuctor.h"
 
 #define isdigit(c) ((c) >= '0' && (c) <= '9')
 
@@ -16,10 +15,10 @@ int main(int argc, char** argv)
     mmap_file file = mmap_file_open_ro("input.txt");
     const int fileSize = (int)(file.size);
 
-    vuctor games = VUCTOR_INIT;
-    VUCTOR_RESERVE(games, GrabResult, 512);
+    int sum1 = 0, sum2 = 0;
 
     int lineIdx = 0;
+    int lineNum = 1;
     while (lineIdx < fileSize)
     {
         const int lineStart = lineIdx;
@@ -31,6 +30,7 @@ int main(int argc, char** argv)
         if (UNLIKELY(lineIdx - lineStart < 2))
         {
             ++lineIdx;
+            ++lineNum;
             continue;
         }
         const view line = { file.data + lineStart, lineIdx - lineStart };
@@ -73,31 +73,25 @@ int main(int argc, char** argv)
                     return 1;
             }
         }
-        VUCTOR_ADD(games, GrabResult, current);
+
+        const int mask = ((current.RedCount - 13) & (current.GreenCount - 14) & (current.BlueCount - 15)) >> 31;
+        sum1 += lineNum & mask;
+
+        sum2 += current.RedCount * current.GreenCount * current.BlueCount;
 
         ++lineIdx;
+        ++lineNum;
     }
 
     //
     // Part 1
     //
 
-    int sum1 = 0;
-    for (int i = 0; i < games.size; ++i)
-    {
-        const int mask = ((VUCTOR_GET(games, GrabResult, i).RedCount - 13) & (VUCTOR_GET(games, GrabResult, i).GreenCount - 14) & (VUCTOR_GET(games, GrabResult, i).BlueCount - 15)) >> 31;
-        sum1 += (i + 1) & mask;
-    }
-
     printf("%d\n", sum1);
 
     //
     // Part 2
     //
-
-    int sum2 = 0;
-    for (int i = 0; i < games.size; ++i)
-        sum2 += VUCTOR_GET(games, GrabResult, i).RedCount * VUCTOR_GET(games, GrabResult, i).GreenCount * VUCTOR_GET(games, GrabResult, i).BlueCount;
 
     printf("%d\n", sum2);
 
