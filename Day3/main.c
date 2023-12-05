@@ -1,9 +1,8 @@
-#include <algorithm>
-#include <cmath>
-#include <cstdint>
-#include <cstdlib>
-#include <vector>
-#include "../common/mmap.hpp"
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include "../common/mmap.h"
+#include "../common/vuctor.h"
 
 #define isdigit(c) ((c) >= '0' && (c) <= '9')
 
@@ -11,32 +10,33 @@
 
 int main(int argc, char** argv)
 {
-    auto file = mmap_file::open_ro("input.txt");
-    const int textLength = file.size();
+    mmap_file file = mmap_file_open_ro("input.txt");
+    const int textLength = (int)(file.size);
 
     // get line length
     int lineLength = 0;
     for (int i = 0; i < textLength; ++i)
     {
-        if (file.data()[i] == '\n')
+        if (file.data[i] == '\n')
         {
             lineLength = i;
             break;
         }
     }
-    const int lineCount = (int)round((float)textLength / (lineLength + 1));
+    const int lineCount = ((textLength + lineLength / 2) / (lineLength + 1));
     
     bool* numbers = (bool*)calloc(textLength, sizeof(bool));
     bool* symbols = (bool*)calloc(textLength, sizeof(bool));
-    std::vector<int> gears;
-    gears.reserve(lineCount * 5);
+
+    vuctor gears = VUCTOR_INIT;
+    VUCTOR_RESERVE(gears, int, lineCount * 5);
 
     for (int y = 0; y < lineCount; ++y)
     {
         for (int x = 0; x < lineLength; ++x)
         {
             const int idx = (y * lineLength) + x;
-            char c = file.data()[dataindex(y, x)];
+            char c = file.data[dataindex(y, x)];
             if (isdigit(c))
             {
                 numbers[idx] = true;
@@ -45,7 +45,7 @@ int main(int argc, char** argv)
             {
                 symbols[idx] = true;
                 if (c == '*')
-                    gears.push_back(y * lineLength + x);
+                    VUCTOR_ADD(gears, int, idx);
             }
         }
     }
@@ -67,7 +67,7 @@ int main(int argc, char** argv)
             while (x < lineLength && numbers[idx])
             {
                 num *= 10;
-                num += file.data()[dataindex(y, x)] - '0';
+                num += file.data[dataindex(y, x)] - '0';
                 ++x;
                 ++idx;
             }
@@ -77,8 +77,8 @@ int main(int argc, char** argv)
                     goto hit;
                 if (y != 0)
                 {
-                    int cidx = ((y - 1) * lineLength) + (std::max)(0, startX - 1);
-                    int cidxEnd = ((y - 1) * lineLength) + (std::min)(lineLength - 1, x);
+                    int cidx = ((y - 1) * lineLength) + MAX(0, startX - 1);
+                    int cidxEnd = ((y - 1) * lineLength) + MIN(lineLength - 1, x);
                     while (cidx <= cidxEnd)
                     {
                         if (symbols[cidx++])
@@ -87,8 +87,8 @@ int main(int argc, char** argv)
                 }
                 if (y + 1 != lineCount)
                 {
-                    int cidx = ((y + 1) * lineLength) + (std::max)(0, startX - 1);
-                    int cidxEnd = ((y + 1) * lineLength) + (std::min)(lineLength - 1, x);
+                    int cidx = ((y + 1) * lineLength) + MAX(0, startX - 1);
+                    int cidxEnd = ((y + 1) * lineLength) + MIN(lineLength - 1, x);
                     while (cidx <= cidxEnd)
                     {
                         if (symbols[cidx++])
@@ -110,17 +110,18 @@ int main(int argc, char** argv)
 
     int sum2 = 0;
 
-    for (int gidx : gears)
+    for (int gi = 0; gi < gears.size; ++gi)
     {
+        int gidx = VUCTOR_GET(gears, int, gi);
         int y = gidx / lineLength;
         int x = gidx % lineLength;
 
         int numCount = 0;
         int mul = 1;
 
-        for (int cy = (std::max)(0, y - 1); cy <= (std::min)(lineCount - 1, y + 1); ++cy)
+        for (int cy = MAX(0, y - 1); cy <= MIN(lineCount - 1, y + 1); ++cy)
         {
-            for (int cx = (std::max)(0, x - 1); cx <= (std::min)(lineLength - 1, x + 1); ++cx)
+            for (int cx = MAX(0, x - 1); cx <= MIN(lineLength - 1, x + 1); ++cx)
             {
                 if (numbers[(cy * lineLength) + cx])
                 {
@@ -133,7 +134,7 @@ int main(int argc, char** argv)
                     while (endX < lineLength && numbers[(cy * lineLength) + endX])
                     {
                         num *= 10;
-                        num += file.data()[dataindex(cy, endX)] - '0';
+                        num += file.data[dataindex(cy, endX)] - '0';
                         ++endX;
                     }
 

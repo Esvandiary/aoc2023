@@ -1,13 +1,16 @@
 #pragma once
 
-#include <cstdio>
-#include <cstdint>
-#include <cstdlib>
+#include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h>
 
 // #define ENABLE_DEBUGLOG
 // #define ENABLE_CHECKS
 
-using chartype = unsigned char;
+typedef unsigned char chartype;
+
+#define MAX(x, y) (((x) > (y)) ? (x) : (y))
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
 
 #if defined(_MSC_VER) && !defined(__clang__)
 #define FORCEINLINE __forceinline
