@@ -27,7 +27,7 @@ static inline FORCEINLINE void _vuctor_reserve(vuctor* v, size_t elemSize, size_
     }
 }
 
-static inline FORCEINLINE void _vuctor_add(vuctor* v, size_t elemSize, void* value)
+static inline FORCEINLINE void _vuctor_add(vuctor* v, size_t elemSize, const void* value)
 {
     if (v->size >= v->capacity)
         _vuctor_reserve(v, elemSize, MAX(v->capacity * 8, 32));
