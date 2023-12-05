@@ -170,13 +170,13 @@ int main(int argc, char** argv)
     // Part 1
     //
 
-    uint32_t sum1 = UINT32_MAX;
+    uint64_t sum1 = UINT64_MAX;
 
     for (int seedIdx = 0; seedIdx < seeds.size; ++seedIdx)
     {
         uint32_t seed = VUCTOR_GET(seeds, uint32_t, seedIdx);
 
-        uint32_t next = seed;
+        uint64_t next = seed;
         for (int m = 0; m < MAPPING_COUNT; ++m)
         {
             for (int i = 0; i < mappings[m].size; ++i)
@@ -194,7 +194,7 @@ int main(int argc, char** argv)
         sum1 = MIN(sum1, next);
     }
 
-    printf("%u\n", sum1);
+    printf("%" PRIu64 "\n", sum1);
  
     //
     // Part 2
