@@ -1,3 +1,4 @@
+#include <math.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -99,7 +100,7 @@ int main(int argc, char** argv)
 
     for (int i = 0; i < aRaces1Count; ++i)
     {
-        uint64_t hold = (aRaces1[i].time - usqrt(aRaces1[i].time * aRaces1[i].time - 4 * aRaces1[i].record)) / 2;
+        uint64_t hold = (aRaces1[i].time - (uint64_t)sqrtf(aRaces1[i].time * aRaces1[i].time - 4 * aRaces1[i].record)) / 2;
         while (distance(aRaces1[i].time, hold) <= aRaces1[i].record)
             ++hold;
 
@@ -112,7 +113,7 @@ int main(int argc, char** argv)
     // Part 2
     //
 
-    uint64_t hold = (race2.time - usqrt(race2.time * race2.time - 4 * race2.record)) / 2;
+    uint64_t hold = (race2.time - (uint64_t)sqrtf(race2.time * race2.time - 4 * race2.record)) / 2;
     while (distance(race2.time, hold) <= race2.record)
         ++hold;
 
