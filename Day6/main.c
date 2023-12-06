@@ -46,9 +46,6 @@ int main(int argc, char** argv)
     mmap_file file = mmap_file_open_ro("input.txt");
     const int fileSize = (int)(file.size);
 
-    vuctor races = VUCTOR_INIT;
-    VUCTOR_RESERVE(races, Race, 64);
-
     Race aRaces1[64];
     int aRaces1Count = 0;
 
