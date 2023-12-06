@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "../common/mmap.h"
+#include "../common/print.h"
 #include "../common/vuctor.h"
 
 #define isdigit(c) ((c) >= '0' && (c) <= '9')
@@ -194,7 +195,7 @@ int main(int argc, char** argv)
         sum1 = MIN(sum1, next);
     }
 
-    printf("%" PRIu64 "\n", sum1);
+    print_uint64(sum1);
  
     //
     // Part 2
@@ -213,7 +214,7 @@ int main(int argc, char** argv)
         DEBUGLOG("checked seed range [%u + %u], value = %" PRIu64 ", sum2 = %" PRIu64 "\n", seedStart, seedRange, value, sum2);
     }
 
-    printf("%" PRIu64 "\n", sum2);
+    print_uint64(sum2);
 
     return 0;
 }

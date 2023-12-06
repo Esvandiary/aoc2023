@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include "../common/mmap.h"
+#include "../common/print.h"
 #include "../common/vuctor.h"
 
 #define isdigit(c) ((c) >= '0' && (c) <= '9')
@@ -102,7 +103,7 @@ int main(int argc, char** argv)
         }
     }
 
-    printf("%d\n", sum1);
+    print_uint64(sum1);
 
     //
     // Part 2
@@ -149,7 +150,7 @@ int main(int argc, char** argv)
             sum2 += mul;
     }
 
-    printf("%d\n", sum2);
+    print_uint64(sum2);
 
     return 0;
 }

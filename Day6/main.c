@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "../common/mmap.h"
+#include "../common/print.h"
 #include "../common/vuctor.h"
 
 #define isdigit(c) ((c) >= '0' && (c) <= '9')
@@ -107,7 +108,7 @@ int main(int argc, char** argv)
         sum1 *= 2 * ((aRaces1[i].time / 2) + 1 - hold) - (1 - (aRaces1[i].time % 2));
     }
 
-    printf("%" PRIu64 "\n", sum1);
+    print_uint64(sum1);
  
     //
     // Part 2
@@ -119,7 +120,7 @@ int main(int argc, char** argv)
 
     uint64_t sum2 = 2 * ((race2.time / 2) + 1 - hold) - (1 - (race2.time % 2));
 
-    printf("%" PRIu64 "\n", sum2);
+    print_uint64(sum2);
 
     return 0;
 }

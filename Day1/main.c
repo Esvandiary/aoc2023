@@ -1,4 +1,5 @@
 #include "../common/mmap.h"
+#include "../common/print.h"
 #include "../common/view.h"
 
 #define isdigit(c) ((c) >= '0' && (c) <= '9')
@@ -244,8 +245,8 @@ int main(int argc, char** argv)
         ++idx;
     }
 
-    printf("%d\n", sum1);
-    printf("%d\n", sum2);
+    print_uint64(sum1);
+    print_uint64(sum2);
 
     return 0;
 }

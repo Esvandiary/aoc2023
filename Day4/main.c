@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "../common/mmap.h"
+#include "../common/print.h"
 #include "../common/vuctor.h"
 
 #define isdigit(c) ((c) >= '0' && (c) <= '9')
@@ -64,7 +65,7 @@ int main(int argc, char** argv)
     // Part 1
     //
 
-    printf("%d\n", sum1);
+    print_uint64(sum1);
 
     //
     // Part 2
@@ -83,7 +84,7 @@ int main(int argc, char** argv)
     for (int i = 0; i < lineNum; ++i)
         sum2 += counts[i];
 
-    printf("%zu\n", sum2);
+    print_uint64(sum2);
 
     return 0;
 }
