@@ -62,9 +62,6 @@ int main(int argc, char** argv)
     vuctor races = VUCTOR_INIT;
     VUCTOR_RESERVE(races, Race, 64);
 
-    Race aRaces1[64];
-    int aRaces1Count = 0;
-
     Race race2;
 
     int idx = 9; // 'Distance:'
@@ -83,7 +80,8 @@ int main(int argc, char** argv)
             num2 += file.data[idx] & 0xF;
             ++idx;
         }
-        aRaces1[aRaces1Count++].time = num;
+        Race* r = VUCTOR_ADD_NOINIT(races, Race);
+        r->time = num;
     }
     race2.time = num2;
     num2 = 0;
@@ -103,7 +101,9 @@ int main(int argc, char** argv)
             num2 += file.data[idx] & 0xF;
             ++idx;
         }
-        aRaces1[raceIdx++].record = num;
+        Race* r = VUCTOR_GET_PTR(races, Race, raceIdx);
+        r->record = num;
+        ++raceIdx;
     }
     race2.record = num2;
 
@@ -113,9 +113,10 @@ int main(int argc, char** argv)
 
     uint64_t sum1 = 1;
 
-    for (int i = 0; i < aRaces1Count; ++i)
+    Race* aRaces = VUCTOR_GET_PTR(races, Race, 0);
+    for (int i = 0; i < races.size; ++i)
     {
-        sum1 *= countwins_q(aRaces1 + i);
+        sum1 *= countwins_q(aRaces + i);
     }
 
     printf("%" PRIu64 "\n", sum1);
