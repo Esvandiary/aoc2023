@@ -18,6 +18,20 @@ static inline FORCEINLINE uint64_t distance(uint64_t time, uint64_t hold)
     return (time - hold) * hold;
 }
 
+static inline FORCEINLINE uint64_t countwins(Race* race)
+{
+    uint64_t minHold = 1, maxHold = race->time / 2;
+    while (maxHold - minHold > 1)
+    {
+        uint64_t hold = minHold + (maxHold - minHold) / 2;
+        if (distance(race->time, hold) > race->record)
+            maxHold = hold;
+        else
+            minHold = hold;
+    }
+    return 2 * ((race->time / 2) + 1 - maxHold) - (1 - (race->time % 2));
+}
+
 int main(int argc, char** argv)
 {
     mmap_file file = mmap_file_open_ro("input.txt");
@@ -80,15 +94,7 @@ int main(int argc, char** argv)
     Race* aRaces = VUCTOR_GET_PTR(races, Race, 0);
     for (int i = 0; i < races.size; ++i)
     {
-        for (int hold = 1; hold <= aRaces[i].time / 2; ++hold)
-        {
-            if (distance(aRaces[i].time, hold) > aRaces[i].record)
-            {
-                const uint64_t n = 2 * ((aRaces[i].time / 2) + 1 - hold) - (1 - (aRaces[i].time % 2));
-                sum1 *= n;
-                break;
-            }
-        }
+        sum1 *= countwins(aRaces + i);
     }
 
     printf("%" PRIu64 "\n", sum1);
@@ -99,15 +105,7 @@ int main(int argc, char** argv)
 
     uint64_t sum2 = 0;
 
-    for (uint64_t hold = 1; hold <= race2.time / 2; ++hold)
-    {
-        if (distance(race2.time, hold) > race2.record)
-        {
-            const uint64_t n = 2 * ((race2.time / 2) + 1 - hold) - (1 - (race2.time % 2));
-            sum2 = n;
-            break;
-        }
-    }
+    sum2 = countwins(&race2);
 
     printf("%" PRIu64 "\n", sum2);
 
