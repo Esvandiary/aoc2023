@@ -73,9 +73,10 @@ int main(int argc, char** argv)
     uint64_t* counts = (uint64_t*)calloc(lineNum, sizeof(uint64_t));
     for (int i = 0; i < lineNum; ++i)
     {
+        const int lineMax = MIN(lineNum, i + VUCTOR_GET(cards, uint8_t, i) + 1);
         counts[i] += 1;
-        for (int ni = 1; i + ni < lineNum && ni <= VUCTOR_GET(cards, uint8_t, i); ++ni)
-            counts[i + ni] += counts[i];
+        for (int ni = i + 1; ni < lineMax; ++ni)
+            counts[ni] += counts[i];
     }
 
     uint64_t sum2 = 0;
