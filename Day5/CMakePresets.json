@@ -11,10 +11,7 @@
             "binaryDir": "${sourceDir}/build",
             "displayName": "Makefiles",
             "description": "Makefiles!",
-            "generator": "Unix Makefiles",
-            "environment": {
-                "CC": "musl-gcc"
-            }
+            "generator": "Unix Makefiles"
         }
     ],
     "buildPresets": [
