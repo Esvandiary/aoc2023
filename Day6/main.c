@@ -41,19 +41,6 @@ static inline FORCEINLINE uint64_t usqrt(uint64_t n)
     return result;
 }
 
-static inline FORCEINLINE uint64_t countwins_q(Race* race)
-{
-    // (time - hold) * hold = record
-    // time * hold - hold * hold = record
-    // (hold * hold) - (time * hold) + record = 0
-
-    uint64_t hold = (race->time - usqrt(race->time * race->time - 4 * race->record)) / 2;
-    while (distance(race->time, hold) <= race->record)
-        ++hold;
-
-    return 2 * ((race->time / 2) + 1 - hold) - (1 - (race->time % 2));
-}
-
 int main(int argc, char** argv)
 {
     mmap_file file = mmap_file_open_ro("input.txt");
@@ -115,7 +102,11 @@ int main(int argc, char** argv)
 
     for (int i = 0; i < aRaces1Count; ++i)
     {
-        sum1 *= countwins_q(aRaces1 + i);
+        uint64_t hold = (aRaces1[i].time - usqrt(aRaces1[i].time * aRaces1[i].time - 4 * aRaces1[i].record)) / 2;
+        while (distance(aRaces1[i].time, hold) <= aRaces1[i].record)
+            ++hold;
+
+        sum1 *= 2 * ((aRaces1[i].time / 2) + 1 - hold) - (1 - (aRaces1[i].time % 2));
     }
 
     printf("%" PRIu64 "\n", sum1);
@@ -124,9 +115,11 @@ int main(int argc, char** argv)
     // Part 2
     //
 
-    uint64_t sum2 = 0;
+    uint64_t hold = (race2.time - usqrt(race2.time * race2.time - 4 * race2.record)) / 2;
+    while (distance(race2.time, hold) <= race2.record)
+        ++hold;
 
-    sum2 = countwins_q(&race2);
+    uint64_t sum2 = 2 * ((race2.time / 2) + 1 - hold) - (1 - (race2.time % 2));
 
     printf("%" PRIu64 "\n", sum2);
 
