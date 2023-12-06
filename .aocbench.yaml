@@ -6,6 +6,6 @@ code: /code
 workdir: /code/Day%day%
 runonce: "cmake . --preset=makefiles && cmake --build --preset=makefiles"
 cmd: build/Day%day%
-daypath: Day%day%/main.c
+daypath: Day%day%
 inputfile: Day%day%/input.txt
 answerfile: Day%day%/answers.txt
