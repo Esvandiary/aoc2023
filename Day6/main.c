@@ -7,6 +7,7 @@
 #include "../common/print.h"
 #include "../common/vuctor.h"
 
+
 #define isdigit(c) ((c) >= '0' && (c) <= '9')
 
 typedef struct Race
