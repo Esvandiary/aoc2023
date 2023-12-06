@@ -18,18 +18,40 @@ static inline FORCEINLINE uint64_t distance(uint64_t time, uint64_t hold)
     return (time - hold) * hold;
 }
 
-static inline FORCEINLINE uint64_t countwins(Race* race)
+// https://stackoverflow.com/a/63452286
+static inline FORCEINLINE uint8_t bit_width(uint64_t x)
 {
-    uint64_t minHold = 1, maxHold = race->time / 2;
-    while (maxHold - minHold > 1)
-    {
-        uint64_t hold = minHold + (maxHold - minHold) / 2;
-        if (distance(race->time, hold) > race->record)
-            maxHold = hold;
-        else
-            minHold = hold;
-    }
-    return 2 * ((race->time / 2) + 1 - maxHold) - (1 - (race->time % 2));
+    return x == 0 ? 1 : 64 - __builtin_clzll(x);
+}
+
+static inline FORCEINLINE uint64_t usqrt(uint64_t n)
+{
+    uint8_t shift = bit_width(n);
+    shift += shift & 1;
+
+    uint64_t result = 0;
+
+    do {
+        shift -= 2;
+        result <<= 1;
+        result |= 1;
+        result ^= result * result > (n >> shift);
+    } while (shift != 0);
+
+    return result;
+}
+
+static inline FORCEINLINE uint64_t countwins_q(Race* race)
+{
+    // (time - hold) * hold = record
+    // time * hold - hold * hold = record
+    // (hold * hold) - (time * hold) + record = 0
+
+    uint64_t hold = (race->time - usqrt(race->time * race->time - 4 * race->record)) / 2;
+    while (distance(race->time, hold) <= race->record)
+        ++hold;
+
+    return 2 * ((race->time / 2) + 1 - hold) - (1 - (race->time % 2));
 }
 
 int main(int argc, char** argv)
@@ -94,7 +116,7 @@ int main(int argc, char** argv)
     Race* aRaces = VUCTOR_GET_PTR(races, Race, 0);
     for (int i = 0; i < races.size; ++i)
     {
-        sum1 *= countwins(aRaces + i);
+        sum1 *= countwins_q(aRaces + i);
     }
 
     printf("%" PRIu64 "\n", sum1);
@@ -105,7 +127,7 @@ int main(int argc, char** argv)
 
     uint64_t sum2 = 0;
 
-    sum2 = countwins(&race2);
+    sum2 = countwins_q(&race2);
 
     printf("%" PRIu64 "\n", sum2);
 
