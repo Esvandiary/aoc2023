@@ -21,29 +21,6 @@ static inline FORCEINLINE uint64_t distance(uint64_t time, uint64_t hold)
     return (time - hold) * hold;
 }
 
-// https://stackoverflow.com/a/63452286
-static inline FORCEINLINE uint8_t bit_width(uint64_t x)
-{
-    return x == 0 ? 1 : 64 - __builtin_clzll(x);
-}
-
-static inline FORCEINLINE uint64_t usqrt(uint64_t n)
-{
-    uint8_t shift = bit_width(n);
-    shift += shift & 1;
-
-    uint64_t result = 0;
-
-    do {
-        shift -= 2;
-        result <<= 1;
-        result |= 1;
-        result ^= result * result > (n >> shift);
-    } while (shift != 0);
-
-    return result;
-}
-
 int main(int argc, char** argv)
 {
     mmap_file file = mmap_file_open_ro("input.txt");
