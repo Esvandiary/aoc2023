@@ -4,7 +4,7 @@ language: C
 dockerfile: .docker/Dockerfile
 code: /code
 workdir: /code/Day%day%
-runonce: "CC=musl-gcc cmake . --preset=makefiles && cmake --build --preset=makefiles"
+runonce: "cmake . --preset=makefiles && cmake --build --preset=makefiles"
 cmd: build/Day%day%
 daypath: Day%day%/main.c
 inputfile: Day%day%/input.txt
