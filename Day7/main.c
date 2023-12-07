@@ -9,16 +9,16 @@
 #include "../common/radixsort.h"
 #include "../common/vuctor.h"
 
-
 #define isdigit(c) ((c) >= '0' && (c) <= '9')
 
-#define HT_HIGH  0
-#define HT_1PAIR 1
-#define HT_2PAIR 2
-#define HT_3KIND 3
-#define HT_HOUSE 4
-#define HT_4KIND 5
-#define HT_5KIND 6
+#define HT_HIGH  1
+#define HT_1PAIR 2
+#define HT_2PAIR 3
+#define HT_3KIND 4
+#define HT_HOUSE 5
+#define HT_4KIND 6
+#define HT_5KIND 7
+#define HT_MAX   8
 
 #define C_JOKER 0
 #define C_2 2
@@ -34,8 +34,9 @@
 #define C_Q 32
 #define C_K 33
 #define C_A 34
+#define C_MAX 35
 
-const uint8_t values[] = {
+static const uint8_t values[] = {
     0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, // 00
     0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, // 10
     0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, // 20
@@ -46,46 +47,43 @@ const uint8_t values[] = {
     0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, // 70
 };
 
+static const uint8_t htidx[] = {
+    HT_5KIND, 0, 0, 0, 0, 0, 0, 0, // only possible with jokers
+    HT_HIGH, HT_HIGH, HT_HIGH, HT_HIGH, HT_HIGH, 0, 0, 0,
+    HT_1PAIR, HT_1PAIR, HT_2PAIR, 0, 0, 0, 0, 0,
+    HT_3KIND, HT_3KIND, HT_HOUSE, 0, 0, 0, 0, 0,
+    HT_4KIND, HT_4KIND, HT_4KIND, HT_4KIND, 0, 0, 0, 0,
+    HT_5KIND, HT_5KIND, HT_5KIND, HT_5KIND, HT_5KIND, 0, 0, 0
+};
+
 static inline FORCEINLINE uint64_t get_ht(uint8_t maxCount, uint8_t secondCount)
 {
-    switch (maxCount)
-    {
-        case 5:
-            return HT_5KIND;
-        case 4:
-            return HT_4KIND;
-        case 3:
-            return (secondCount == 2) ? HT_HOUSE : HT_3KIND;
-        case 2:
-            return (secondCount == 2) ? HT_2PAIR : HT_1PAIR;
-        default:
-            return HT_HIGH;
-    }
+    return htidx[(maxCount << 3) | secondCount];
 }
 
-static inline FORCEINLINE size_t parse_hand(const chartype* s, uint64_t* out)
+static size_t parse_hand(const chartype* s, uint64_t* out1, uint64_t* out2)
 {
     // format
     //  63     ...     30 29    0
     // [HT C1 C2 C3 C4 C5 BIDSIZE]
     const chartype* s_start = s;
-    uint64_t result = 0;
-    uint8_t counts[64] = {0};
+    uint64_t result1 = 0, result2 = 0;
+    uint8_t counts[C_MAX] = {0};
 
     const uint64_t v1 = values[*s++];
-    result |= (v1 << 54);
+    result1 |= (v1 << 54);
     ++counts[v1];
     const uint64_t v2 = values[*s++];
-    result |= (v2 << 48);
+    result1 |= (v2 << 48);
     ++counts[v2];
     const uint64_t v3 = values[*s++];
-    result |= (v3 << 42);
+    result1 |= (v3 << 42);
     ++counts[v3];
     const uint64_t v4 = values[*s++];
-    result |= (v4 << 36);
+    result1 |= (v4 << 36);
     ++counts[v4];
     const uint64_t v5 = values[*s++];
-    result |= (v5 << 30);
+    result1 |= (v5 << 30);
     ++counts[v5];
 
     ++s; // space
@@ -96,34 +94,48 @@ static inline FORCEINLINE size_t parse_hand(const chartype* s, uint64_t* out)
         bid *= 10;
         bid += (*s++ & 0xF);
     }
-    result |= bid;
+    result1 |= bid;
 
     // figure out result
-    uint8_t maxCount = 0;
-    uint8_t secondCount = 0;
-    for (int i = C_2; i <= C_A; ++i)
-    {
-        if (counts[i] > maxCount)
-        {
-            secondCount = maxCount;
-            maxCount = counts[i];
-        }
-        else if (counts[i] > secondCount)
-        {
-            secondCount = counts[i];
-        }
-    }
-    
-    result |= (get_ht(maxCount, secondCount) << 60);
+    uint8_t maxCount1, secondCount1 = 0;
+    uint8_t maxCount2, secondCount2;
 
-    *out = result;
+    #define CHECKMAX(n, mcount, scount) if (counts[n] > (mcount)) { scount = mcount; mcount = counts[n]; } else if (counts[n] > (scount)) { scount = counts[n]; }
+
+    maxCount1 = counts[C_2];
+    CHECKMAX(C_3, maxCount1, secondCount1);
+    CHECKMAX(C_4, maxCount1, secondCount1);
+    CHECKMAX(C_5, maxCount1, secondCount1);
+    CHECKMAX(C_6, maxCount1, secondCount1);
+    CHECKMAX(C_7, maxCount1, secondCount1);
+    CHECKMAX(C_8, maxCount1, secondCount1);
+    CHECKMAX(C_9, maxCount1, secondCount1);
+    CHECKMAX(C_T, maxCount1, secondCount1);
+    CHECKMAX(C_Q, maxCount1, secondCount1);
+    CHECKMAX(C_K, maxCount1, secondCount1);
+    CHECKMAX(C_A, maxCount1, secondCount1);
+    maxCount2 = maxCount1;
+    secondCount2 = secondCount1;
+    CHECKMAX(C_J, maxCount1, secondCount1);
+
+    result2 = result1 & (~(1ULL << 58) & ~(1ULL << 52) & ~(1ULL << 46) & ~(1ULL << 40) & ~(1ULL << 34));
+    
+    result1 |= (get_ht(maxCount1, secondCount1) << 60);
+    result2 |= (get_ht(maxCount2 + counts[C_J], secondCount2) << 60);
+
+    *out1 = result1;
+    *out2 = result2;
     return (s - s_start);
 }
 
-static int comparer(const void* p1, const void* p2)
+typedef struct GameArray
 {
-    return *(const uint64_t*)p1 > *(const uint64_t*)p2;
-}
+    size_t size;
+    uint64_t data[1024];
+} GameArray;
+
+static GameArray games[HT_MAX] = {0};
+static GameArray games2[HT_MAX] = {0};
 
 int main(int argc, char** argv)
 {
@@ -131,81 +143,50 @@ int main(int argc, char** argv)
     const int fileSize = (int)(file.size);
 
     //
-    // Part 1
+    // Part 1 + 2
     //
 
     uint64_t sum1 = 0;
 
-    vuctor games = VUCTOR_INIT;
-    VUCTOR_RESERVE(games, uint64_t, 2048);
-
     size_t idx = 0;
     while (idx + 2 < file.size)
     {
-        uint64_t* n = VUCTOR_ADD_NOINIT(games, uint64_t);
-        idx += parse_hand(file.data + idx, n);
+        uint64_t n, n2;
+        idx += parse_hand(file.data + idx, &n, &n2);
+        games[n >> 60].data[games[n >> 60].size++] = n;
+        games2[n2 >> 60].data[games2[n2 >> 60].size++] = n2;
         ++idx; // '\n'
     }
 
-    vuctor gcopy = VUCTOR_INIT;
-    VUCTOR_RESERVE(gcopy, uint64_t, games.size);
+    uint64_t buf[1024];
+    for (size_t i = 0; i < HT_MAX; ++i)
+        radixSort((uint64_t*)games[i].data, games[i].size, buf);
 
-    radixSort((uint64_t*)games.data, games.size, (uint64_t*)gcopy.data);
-
-    for (int i = 0; i < games.size; ++i)
+    size_t rank = 1;
+    for (int i = 0; i < HT_MAX; ++i)
     {
-        uint32_t bid = VUCTOR_GET(games, uint64_t, i) & 0x3FFFFFFF;
-        sum1 += (bid * (i + 1));
+        for (int c = 0; c < games[i].size; ++c)
+        {
+            uint32_t bid = games[i].data[c] & 0x3FFFFFFF;
+            sum1 += (bid * rank++);
+        }
     }
 
     print_uint64(sum1);
- 
-    //
-    // Part 2
-    //
 
     uint64_t sum2 = 0;
 
-    for (int i = 0; i < games.size; ++i)
+    for (size_t i = 0; i < HT_MAX; ++i)
+        radixSort((uint64_t*)games2[i].data, games2[i].size, buf);
+
+    rank = 1;
+    for (int i = 0; i < HT_MAX; ++i)
     {
-        uint64_t* n = VUCTOR_GET_PTR(games, uint64_t, i);
-        // mask out jokers and previous result
-        *n &= (~(7ULL << 60) & ~(1ULL << 58) & ~(1ULL << 52) & ~(1ULL << 46) & ~(1ULL << 40) & ~(1ULL << 34));
-
-        uint8_t counts[64] = {0};
-        ++counts[(*n >> 54) & 0x3F];
-        ++counts[(*n >> 48) & 0x3F];
-        ++counts[(*n >> 42) & 0x3F];
-        ++counts[(*n >> 36) & 0x3F];
-        ++counts[(*n >> 30) & 0x3F];
-
-        // figure out result
-        uint8_t maxCount = 0;
-        uint8_t secondCount = 0;
-        for (int i = C_2; i <= C_A; ++i)
+        for (int c = 0; c < games2[i].size; ++c)
         {
-            if (counts[i] > maxCount)
-            {
-                secondCount = maxCount;
-                maxCount = counts[i];
-            }
-            else if (counts[i] > secondCount)
-            {
-                secondCount = counts[i];
-            }
+            uint32_t bid = games2[i].data[c] & 0x3FFFFFFF;
+            sum2 += (bid * rank++);
         }
-        // add jokers to maximise result
-        maxCount += counts[C_JOKER];
-        
-        *n |= (get_ht(maxCount, secondCount) << 60);
-    }
-
-    radixSort((uint64_t*)games.data, games.size, (uint64_t*)gcopy.data);
-
-    for (int i = 0; i < games.size; ++i)
-    {
-        uint32_t bid = VUCTOR_GET(games, uint64_t, i) & 0x3FFFFFFF;
-        sum2 += (bid * (i + 1));
     }
 
     print_uint64(sum2);
