@@ -128,15 +128,6 @@ static size_t parse_hand(const chartype* s, uint64_t* out1, uint64_t* out2)
     return (s - s_start);
 }
 
-typedef struct GameArray
-{
-    size_t size;
-    uint64_t data[1024];
-} GameArray;
-
-static GameArray games[HT_MAX] = {0};
-static GameArray games2[HT_MAX] = {0};
-
 int main(int argc, char** argv)
 {
     mmap_file file = mmap_file_open_ro("input.txt");
@@ -146,6 +137,11 @@ int main(int argc, char** argv)
     // Part 1 + 2
     //
 
+    vuctor games = VUCTOR_INIT;
+    vuctor games2 = VUCTOR_INIT;
+    VUCTOR_RESERVE(games, uint64_t, 2048);
+    VUCTOR_RESERVE(games2, uint64_t, 2048);
+
     uint64_t sum1 = 0;
 
     size_t idx = 0;
@@ -153,40 +149,32 @@ int main(int argc, char** argv)
     {
         uint64_t n, n2;
         idx += parse_hand(file.data + idx, &n, &n2);
-        games[n >> 60].data[games[n >> 60].size++] = n;
-        games2[n2 >> 60].data[games2[n2 >> 60].size++] = n2;
+        VUCTOR_ADD(games, uint64_t, n);
+        VUCTOR_ADD(games2, uint64_t, n2);
         ++idx; // '\n'
     }
 
-    uint64_t buf[1024];
-    for (size_t i = 0; i < HT_MAX; ++i)
-        radixSort((uint64_t*)games[i].data, games[i].size, buf);
+    uint64_t* buf = (uint64_t*)malloc(sizeof(uint64_t) * games.size);
+    radixSort((uint64_t*)games.data, games.size, buf);
 
     size_t rank = 1;
-    for (int i = 0; i < HT_MAX; ++i)
+    for (int c = 0; c < games.size; ++c)
     {
-        for (int c = 0; c < games[i].size; ++c)
-        {
-            uint32_t bid = games[i].data[c] & 0x3FFFFFFF;
-            sum1 += (bid * rank++);
-        }
+        uint32_t bid = VUCTOR_GET(games, uint64_t, c) & 0x3FFFFFFF;
+        sum1 += (bid * rank++);
     }
 
     print_uint64(sum1);
 
     uint64_t sum2 = 0;
 
-    for (size_t i = 0; i < HT_MAX; ++i)
-        radixSort((uint64_t*)games2[i].data, games2[i].size, buf);
+    radixSort((uint64_t*)games2.data, games2.size, buf);
 
     rank = 1;
-    for (int i = 0; i < HT_MAX; ++i)
+    for (int c = 0; c < games2.size; ++c)
     {
-        for (int c = 0; c < games2[i].size; ++c)
-        {
-            uint32_t bid = games2[i].data[c] & 0x3FFFFFFF;
-            sum2 += (bid * rank++);
-        }
+        uint32_t bid = VUCTOR_GET(games2, uint64_t, c) & 0x3FFFFFFF;
+        sum2 += (bid * rank++);
     }
 
     print_uint64(sum2);
