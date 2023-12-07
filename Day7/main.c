@@ -45,6 +45,23 @@ const uint8_t values[] = {
     0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, // 70
 };
 
+static inline FORCEINLINE uint64_t get_ht(uint8_t maxCount, uint8_t secondCount)
+{
+    switch (maxCount)
+    {
+        case 5:
+            return HT_5KIND;
+        case 4:
+            return HT_4KIND;
+        case 3:
+            return (secondCount == 2) ? HT_HOUSE : HT_3KIND;
+        case 2:
+            return (secondCount == 2) ? HT_2PAIR : HT_1PAIR;
+        default:
+            return HT_HIGH;
+    }
+}
+
 static inline FORCEINLINE size_t parse_hand(const chartype* s, uint64_t* out)
 {
     // format
@@ -96,21 +113,7 @@ static inline FORCEINLINE size_t parse_hand(const chartype* s, uint64_t* out)
         }
     }
     
-    uint64_t ht;
-    switch (maxCount)
-    {
-        case 5:
-            ht = HT_5KIND; break;
-        case 4:
-            ht = HT_4KIND; break;
-        case 3:
-            ht = (secondCount == 2) ? HT_HOUSE : HT_3KIND; break;
-        case 2:
-            ht = (secondCount == 2) ? HT_2PAIR : HT_1PAIR; break;
-        default:
-            ht = HT_HIGH; break;
-    }
-    result |= (ht << 60);
+    result |= (get_ht(maxCount, secondCount) << 60);
 
     *out = result;
     return (s - s_start);
@@ -190,21 +193,7 @@ int main(int argc, char** argv)
         // add jokers to maximise result
         maxCount += counts[C_JOKER];
         
-        uint64_t ht;
-        switch (maxCount)
-        {
-            case 5:
-                ht = HT_5KIND; break;
-            case 4:
-                ht = HT_4KIND; break;
-            case 3:
-                ht = (secondCount == 2) ? HT_HOUSE : HT_3KIND; break;
-            case 2:
-                ht = (secondCount == 2) ? HT_2PAIR : HT_1PAIR; break;
-            default:
-                ht = HT_HIGH; break;
-        }
-        *n |= (ht << 60);
+        *n |= (get_ht(maxCount, secondCount) << 60);
     }
 
     qsort(games.data, games.size, sizeof(uint64_t), comparer);
