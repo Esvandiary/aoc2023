@@ -6,6 +6,7 @@
 #include <string.h>
 #include "../common/mmap.h"
 #include "../common/print.h"
+#include "../common/radixsort.h"
 #include "../common/vuctor.h"
 
 
@@ -146,7 +147,10 @@ int main(int argc, char** argv)
         ++idx; // '\n'
     }
 
-    qsort(games.data, games.size, sizeof(uint64_t), comparer);
+    vuctor gcopy = VUCTOR_INIT;
+    VUCTOR_RESERVE(gcopy, uint64_t, games.size);
+
+    radixSort((uint64_t*)games.data, games.size, (uint64_t*)gcopy.data);
 
     for (int i = 0; i < games.size; ++i)
     {
@@ -196,7 +200,7 @@ int main(int argc, char** argv)
         *n |= (get_ht(maxCount, secondCount) << 60);
     }
 
-    qsort(games.data, games.size, sizeof(uint64_t), comparer);
+    radixSort((uint64_t*)games.data, games.size, (uint64_t*)gcopy.data);
 
     for (int i = 0; i < games.size; ++i)
     {
