@@ -101,9 +101,7 @@ int main(int argc, char** argv)
     uint64_t sum2 = 0;
 
     uint16_t* const aaaaaaa = VUCTOR_GET_PTR(aaaaaa, uint16_t, 0);
-    uint64_t* const periodalloc = (uint64_t*)calloc(aaaaaa.size * 2, sizeof(uint64_t));
-    uint64_t* const first = periodalloc + 0;
-    uint64_t* const periods = periodalloc + aaaaaa.size;
+    uint64_t* const periods = (uint64_t*)calloc(aaaaaa.size, sizeof(uint64_t));
 
     for (size_t i = 0; i < aaaaaa.size; ++i)
     {
@@ -113,15 +111,18 @@ int main(int argc, char** argv)
             periods[i] = sum1;
             continue;
         }
-        size_t iter;
-        for (iter = 0; iter < 10000000; ++iter)
+        size_t iter = 0;
+        while (iter < 1000000)
         {
-            const uint8_t n = VUCTOR_GET(instructions, uint8_t, iter % instructions.size);
-            // DEBUGLOG("[%5lu] [%c] [%c%c%c --> %c%c%c]\n", iter, n ? 'R' : 'L', CHARLIST(aaaaaaa[i]), CHARLIST(destinations[DSTIDX(aaaaaaa[i], n)]));
-            aaaaaaa[i] = destinations[DSTIDX(aaaaaaa[i], n)];
+            for (size_t j = 0; j < instructions.size; ++j)
+            {
+                const uint8_t n = VUCTOR_GET(instructions, uint8_t, iter++ % instructions.size);
+                // DEBUGLOG("[%5lu] [%c] [%c%c%c --> %c%c%c]\n", iter, n ? 'R' : 'L', CHARLIST(aaaaaaa[i]), CHARLIST(destinations[DSTIDX(aaaaaaa[i], n)]));
+                aaaaaaa[i] = destinations[DSTIDX(aaaaaaa[i], n)];
+            }
             if ((aaaaaaa[i] & 0x1F) == 26)
             {
-                periods[i] = iter + 1;
+                periods[i] = iter;
                 break;
             }
         }
