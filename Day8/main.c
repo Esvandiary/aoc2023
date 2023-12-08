@@ -61,7 +61,6 @@ int main(int argc, char** argv)
     idx += 2; // '\n\n'
 
     uint16_t destinations[1U << 16];
-    uint16_t counts[1U << 15] = {0};
 
     while (idx < file.size)
     {
@@ -71,10 +70,6 @@ int main(int argc, char** argv)
         idx += 2; // ', '
         uint16_t dright = GETIDX(file.data[idx++], file.data[idx++], file.data[idx++]);
         idx += 2; // ')\n'
-
-        ++counts[src];
-        ++counts[dleft];
-        ++counts[dright];
 
         destinations[DSTIDX(src, 0)] = dleft;
         destinations[DSTIDX(src, 1)] = dright;
