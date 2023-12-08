@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+// #define ENABLE_DEBUGLOG
 #include "../common/mmap.h"
 #include "../common/print.h"
 #include "../common/vuctor.h"
@@ -111,21 +112,11 @@ int main(int argc, char** argv)
         for (iter = 0; iter < 10000000; ++iter)
         {
             const uint8_t n = VUCTOR_GET(instructions, uint8_t, iter % instructions.size);
+            DEBUGLOG("[%5lu] [%c] [%c%c%c --> %c%c%c]\n", iter, n ? 'R' : 'L', CHARLIST(aaaaaaa[i]), CHARLIST(destinations[DSTIDX(aaaaaaa[i], n)]));
             aaaaaaa[i] = destinations[DSTIDX(aaaaaaa[i], n)];
             if ((aaaaaaa[i] & 0x1F) == 26)
             {
-                first[i] = iter;
-                break;
-            }
-        }
-        ++iter;
-        for (; iter < 10000000; ++iter)
-        {
-            const uint8_t n = VUCTOR_GET(instructions, uint8_t, iter % instructions.size);
-            aaaaaaa[i] = destinations[DSTIDX(aaaaaaa[i], n)];
-            if ((aaaaaaa[i] & 0x1F) == 26)
-            {
-                periods[i] = iter - first[i];
+                periods[i] = iter + 1;
                 break;
             }
         }
