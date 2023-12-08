@@ -36,11 +36,11 @@ typedef unsigned char chartype;
 #if defined(ENABLE_DEBUGLOG)
 #define DEBUGLOG(...) fprintf(stderr, __VA_ARGS__)
 #else
-#define DEBUGLOG(...)
+#define DEBUGLOG(...) (void)0
 #endif
 
 #if defined(ENABLE_CHECKS)
 #define CHECK(x, ...) if (!(x)) { fprintf(stderr, __VA_ARGS__); exit(1); }
 #else
-#define CHECK(x, ...)
+#define CHECK(x, ...) (void)0
 #endif

@@ -14,7 +14,7 @@
 
 #define GETIDX(a, b, c) (uint16_t)((((a) & 0x1F) << 10) | (((b) & 0x1F) << 5) | (((c) & 0x1F) >> 0))
 #define DSTIDX(a, n) (((a) << 1) | n)
-#define CHARLIST(a) ((((a) >> 10) & 0x1F) | 64), ((((a) >> 5) & 0x1F) | 64), ((((a) >> 0) & 0x1F) | 64)
+#define CHARLIST(a) (char)((((a) >> 10) & 0x1F) | 64), (char)((((a) >> 5) & 0x1F) | 64), (char)((((a) >> 0) & 0x1F) | 64)
 
 static inline FORCEINLINE uint64_t gcd(uint64_t a, uint64_t b)
 {
@@ -61,7 +61,7 @@ int main(int argc, char** argv)
     idx += 2; // '\n\n'
 
     uint16_t destinations[1U << 16];
-    uint32_t distances[1U << 16];
+    uint16_t counts[1U << 15] = {0};
 
     while (idx < file.size)
     {
@@ -72,11 +72,21 @@ int main(int argc, char** argv)
         uint16_t dright = GETIDX(file.data[idx++], file.data[idx++], file.data[idx++]);
         idx += 2; // ')\n'
 
+        ++counts[src];
+        ++counts[dleft];
+        ++counts[dright];
+
         destinations[DSTIDX(src, 0)] = dleft;
         destinations[DSTIDX(src, 1)] = dright;
 
         if ((src & 0x1F) == 1)
             VUCTOR_ADD(aaaaaa, uint16_t, src);
+    }
+
+    for (size_t i = 0; i < 1U << 15; ++i)
+    {
+        if (counts[i] > 2)
+            DEBUGLOG("%c%c%c count = %u\n", CHARLIST(i), counts[i]);
     }
 
     //
@@ -108,6 +118,11 @@ int main(int argc, char** argv)
 
     for (size_t i = 0; i < aaaaaa.size; ++i)
     {
+        if (aaaaaaa[i] == GETIDX('Z','Z','Z'))
+        {
+            periods[i] = sum1;
+            continue;
+        }
         size_t iter;
         for (iter = 0; iter < 10000000; ++iter)
         {
@@ -121,6 +136,10 @@ int main(int argc, char** argv)
             }
         }
     }
+
+    DEBUGLOG("GOTTEM\n");
+    for (size_t i = 0; i < aaaaaa.size; ++i)
+        DEBUGLOG("[%zu] %lu\n", i, periods[i]);
 
     sum2 = lcm(periods, aaaaaa.size);
 
