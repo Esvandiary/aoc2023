@@ -83,12 +83,6 @@ int main(int argc, char** argv)
             VUCTOR_ADD(aaaaaa, uint16_t, src);
     }
 
-    for (size_t i = 0; i < 1U << 15; ++i)
-    {
-        if (counts[i] > 2)
-            DEBUGLOG("%c%c%c count = %u\n", CHARLIST(i), counts[i]);
-    }
-
     //
     // Part 1
     //
@@ -118,8 +112,9 @@ int main(int argc, char** argv)
 
     for (size_t i = 0; i < aaaaaa.size; ++i)
     {
-        if (aaaaaaa[i] == GETIDX('Z','Z','Z'))
+        if (aaaaaaa[i] == GETIDX('A','A','A'))
         {
+            DEBUGLOG("skipping AAA -> ZZZ\n");
             periods[i] = sum1;
             continue;
         }
@@ -127,7 +122,7 @@ int main(int argc, char** argv)
         for (iter = 0; iter < 10000000; ++iter)
         {
             const uint8_t n = VUCTOR_GET(instructions, uint8_t, iter % instructions.size);
-            DEBUGLOG("[%5lu] [%c] [%c%c%c --> %c%c%c]\n", iter, n ? 'R' : 'L', CHARLIST(aaaaaaa[i]), CHARLIST(destinations[DSTIDX(aaaaaaa[i], n)]));
+            // DEBUGLOG("[%5lu] [%c] [%c%c%c --> %c%c%c]\n", iter, n ? 'R' : 'L', CHARLIST(aaaaaaa[i]), CHARLIST(destinations[DSTIDX(aaaaaaa[i], n)]));
             aaaaaaa[i] = destinations[DSTIDX(aaaaaaa[i], n)];
             if ((aaaaaaa[i] & 0x1F) == 26)
             {
