@@ -121,10 +121,11 @@ int main(int argc, char** argv)
         {
             for (size_t j = 0; j < instructionCount; ++j)
             {
-                const uint8_t n = aInstructions[iter++ % instructionCount];
+                const uint8_t n = aInstructions[j];
                 // DEBUGLOG("[%5lu] [%c] [%c%c%c --> %c%c%c]\n", iter, n ? 'R' : 'L', CHARLIST(aaaaaaa[i]), CHARLIST(destinations[DSTIDX(aaaaaaa[i], n)]));
                 aaaaaaa[i] = destinations[DSTIDX(aaaaaaa[i], n)];
             }
+            iter += instructionCount;
             if ((aaaaaaa[i] & 0x1F) == 26)
             {
                 periods[i] = iter;
