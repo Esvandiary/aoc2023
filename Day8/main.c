@@ -3,10 +3,10 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 // #define ENABLE_DEBUGLOG
 #include "../common/mmap.h"
 #include "../common/print.h"
+#include "../common/stopwatch.h"
 #include "../common/vuctor.h"
 
 #define isdigit(c) ((c) >= '0' && (c) <= '9')
@@ -45,22 +45,22 @@ int main(int argc, char** argv)
     mmap_file file = mmap_file_open_ro("input.txt");
     const int fileSize = (int)(file.size);
 
-    vuctor instructions = VUCTOR_INIT;
-    VUCTOR_RESERVE(instructions, uint8_t, 1024);
-
     vuctor aaaaaa = VUCTOR_INIT;
-    VUCTOR_RESERVE(aaaaaa, uint16_t, 1024);
+    VUCTOR_RESERVE(aaaaaa, uint16_t, 64);
 
     size_t idx = 0;
     while (idx < file.size && file.data[idx] != '\n')
     {
-        uint8_t n = (file.data[idx++] >> 4) & 1;
-        VUCTOR_ADD(instructions, uint8_t, n);
+        file.data[idx] = (file.data[idx] >> 4) & 1;
+        ++idx;
     }
+    const uint8_t* aInstructions = (const uint8_t*)(file.data);
+    size_t instructionCount = idx;
     idx += 2; // '\n\n'
 
     uint16_t destinations[1U << 16];
 
+    DSTOPWATCH_START(parsing);
     while (idx < file.size)
     {
         uint16_t src = GETIDX(file.data[idx++], file.data[idx++], file.data[idx++]);
@@ -76,27 +76,33 @@ int main(int argc, char** argv)
         if ((src & 0x1F) == 1)
             VUCTOR_ADD(aaaaaa, uint16_t, src);
     }
+    DSTOPWATCH_END(parsing);
+    DSTOPWATCH_PRINT(parsing);
 
     //
     // Part 1
     //
 
+    DSTOPWATCH_START(part1);
     uint64_t sum1 = 0;
 
     uint16_t src = GETIDX('A', 'A', 'A');
     const uint16_t soln = GETIDX('Z', 'Z', 'Z');
     while (src != soln)
     {
-        const uint8_t n = VUCTOR_GET(instructions, uint8_t, sum1++ % instructions.size);
+        const uint8_t n = aInstructions[sum1++ % instructionCount];
         src = destinations[DSTIDX(src, n)];
     }
 
     print_uint64(sum1);
+    DSTOPWATCH_END(part1);
+    DSTOPWATCH_PRINT(part1);
 
     //
     // Part 2
     //
 
+    DSTOPWATCH_START(part2);
     uint64_t sum2 = 0;
 
     uint16_t* const aaaaaaa = VUCTOR_GET_PTR(aaaaaa, uint16_t, 0);
@@ -111,11 +117,11 @@ int main(int argc, char** argv)
             continue;
         }
         size_t iter = 0;
-        while (iter < 1000000)
+        while (true)
         {
-            for (size_t j = 0; j < instructions.size; ++j)
+            for (size_t j = 0; j < instructionCount; ++j)
             {
-                const uint8_t n = VUCTOR_GET(instructions, uint8_t, iter++ % instructions.size);
+                const uint8_t n = aInstructions[iter++ % instructionCount];
                 // DEBUGLOG("[%5lu] [%c] [%c%c%c --> %c%c%c]\n", iter, n ? 'R' : 'L', CHARLIST(aaaaaaa[i]), CHARLIST(destinations[DSTIDX(aaaaaaa[i], n)]));
                 aaaaaaa[i] = destinations[DSTIDX(aaaaaaa[i], n)];
             }
@@ -126,12 +132,17 @@ int main(int argc, char** argv)
             }
         }
     }
+    DSTOPWATCH_END(part2);
+    DSTOPWATCH_PRINT(part2);
 
     // DEBUGLOG("GOTTEM\n");
     // for (size_t i = 0; i < aaaaaa.size; ++i)
     //     DEBUGLOG("[%zu] %lu\n", i, periods[i]);
 
+    DSTOPWATCH_START(lcm);
     sum2 = lcm(periods, aaaaaa.size);
+    DSTOPWATCH_END(lcm);
+    DSTOPWATCH_PRINT(lcm);
 
     print_uint64(sum2);
 
