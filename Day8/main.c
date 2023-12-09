@@ -1,4 +1,3 @@
-#include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -128,9 +127,9 @@ int main(int argc, char** argv)
         }
     }
 
-    DEBUGLOG("GOTTEM\n");
-    for (size_t i = 0; i < aaaaaa.size; ++i)
-        DEBUGLOG("[%zu] %lu\n", i, periods[i]);
+    // DEBUGLOG("GOTTEM\n");
+    // for (size_t i = 0; i < aaaaaa.size; ++i)
+    //     DEBUGLOG("[%zu] %lu\n", i, periods[i]);
 
     sum2 = lcm(periods, aaaaaa.size);
 
