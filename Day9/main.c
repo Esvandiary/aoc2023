@@ -58,16 +58,17 @@ int main(int argc, char** argv)
 
         for (int i = 0; i < 32; ++i)
         {
-            int32_t* dcur = dlist + i*128;
-            int32_t* dnext = dlist + (i+1)*128;
-            int32_t last = firsts[i] = dcur[0];
+            int32_t* dcurn = dlist + i*128 + 1;
+            int32_t* dnextn = dlist + (i+1)*128;
+            int32_t last = firsts[i] = *(dcurn - 1);
             int32_t cdiff = 0;
-            for (int n = 1; n < (zcount - i); ++n)
+            const int nend = zcount - i;
+            for (int n = 1; n < nend; ++n)
             {
-                const int32_t cn = dcur[n];
+                const int32_t cn = *dcurn++;
                 const int32_t cndiff = cn - last;
                 cdiff |= cndiff;
-                dnext[n-1] = cndiff;
+                *dnextn++ = cndiff;
                 last = cn;
             }
             lasts[i] = last;
