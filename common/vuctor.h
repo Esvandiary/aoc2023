@@ -19,6 +19,7 @@ typedef struct vuctor
 #define VUCTOR_ADD_NOINIT(v, type) (type*)_vuctor_add_noinit(&(v), sizeof(type))
 #define VUCTOR_RESERVE(v, type, capacity) _vuctor_reserve(&(v), sizeof(type), (capacity))
 #define VUCTOR_RESIZE(v, type, size) _vuctor_resize(&(v), sizeof(type), (size))
+#define VUCTOR_CLEAR(v, type) ((v).size = 0)
 #define VUCTOR_FREE(v) _vuctor_free(v)
 
 static inline FORCEINLINE void _vuctor_reserve(vuctor* v, size_t elemSize, size_t capacity)
