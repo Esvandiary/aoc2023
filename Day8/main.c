@@ -1,3 +1,4 @@
+#include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -78,21 +79,44 @@ int main(int argc, char** argv)
     }
 
     //
-    // Part 1 + 2
+    // Part 1
     //
 
-    uint8_t* aInstructions = VUCTOR_GET_PTR(instructions, uint8_t, 0);
+    uint64_t sum1 = 0;
+
+    uint16_t src = GETIDX('A', 'A', 'A');
+    const uint16_t soln = GETIDX('Z', 'Z', 'Z');
+    while (src != soln)
+    {
+        const uint8_t n = VUCTOR_GET(instructions, uint8_t, sum1++ % instructions.size);
+        src = destinations[DSTIDX(src, n)];
+    }
+
+    print_uint64(sum1);
+
+    //
+    // Part 2
+    //
+
+    uint64_t sum2 = 0;
+
     uint16_t* const aaaaaaa = VUCTOR_GET_PTR(aaaaaa, uint16_t, 0);
-    uint64_t* const periods = (uint64_t*)malloc(aaaaaa.size * sizeof(uint64_t));
+    uint64_t* const periods = (uint64_t*)calloc(aaaaaa.size, sizeof(uint64_t));
 
     for (size_t i = 0; i < aaaaaa.size; ++i)
     {
+        if (aaaaaaa[i] == GETIDX('A','A','A'))
+        {
+            DEBUGLOG("skipping AAA -> ZZZ\n");
+            periods[i] = sum1;
+            continue;
+        }
         size_t iter = 0;
         while (iter < 1000000)
         {
             for (size_t j = 0; j < instructions.size; ++j)
             {
-                const uint8_t n = aInstructions[iter++ % instructions.size];
+                const uint8_t n = VUCTOR_GET(instructions, uint8_t, iter++ % instructions.size);
                 // DEBUGLOG("[%5lu] [%c] [%c%c%c --> %c%c%c]\n", iter, n ? 'R' : 'L', CHARLIST(aaaaaaa[i]), CHARLIST(destinations[DSTIDX(aaaaaaa[i], n)]));
                 aaaaaaa[i] = destinations[DSTIDX(aaaaaaa[i], n)];
             }
@@ -108,20 +132,7 @@ int main(int argc, char** argv)
     for (size_t i = 0; i < aaaaaa.size; ++i)
         DEBUGLOG("[%zu] %lu\n", i, periods[i]);
 
-    uint64_t sum1 = 0;
-
-    for (size_t i = 0; i < aaaaaa.size; ++i)
-    {
-        if (aaaaaaa[i] == GETIDX('Z','Z','Z'))
-        {
-            sum1 = periods[i];
-            break;
-        }
-    }
-
-    print_uint64(sum1);
-
-    uint64_t sum2 = lcm(periods, aaaaaa.size);
+    sum2 = lcm(periods, aaaaaa.size);
 
     print_uint64(sum2);
 

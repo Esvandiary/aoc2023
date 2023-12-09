@@ -6,6 +6,7 @@ set(CMAKE_C_STANDARD 11)
 project(Day8 C)
 
 add_executable(Day8 "main.c")
+target_link_libraries(Day8 PRIVATE "m")
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -static-libgcc -static -march=native -mtune=native")
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3")
