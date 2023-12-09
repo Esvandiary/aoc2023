@@ -11,17 +11,6 @@
 
 #define isdigit(c) ((c) >= '0' && (c) <= '9')
 
-static const int8_t signs[] = {
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  // 00
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  // 10
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,-1, 1, 1,  // 20
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  // 30
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  // 40
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  // 50
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  // 60
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  // 70
-};
-
 int main(int argc, char** argv)
 {
     mmap_file file = mmap_file_open_ro("input.txt");
@@ -42,8 +31,16 @@ int main(int argc, char** argv)
         while (idx < file.size)
         {
             int32_t num = 0;
-            int32_t sign = signs[file.data[idx]];
-            idx += (-(sign - 1) >> 1);
+            int32_t sign;
+            if (file.data[idx] == '-')
+            {
+                sign = -1;
+                ++idx;
+            }
+            else
+            {
+                sign = 1;
+            }
             while (isdigit(file.data[idx]))
             {
                 num *= 10;
@@ -64,18 +61,18 @@ int main(int argc, char** argv)
             int32_t* dcur = dlist + i*128;
             int32_t* dnext = dlist + (i+1)*128;
             int32_t last = firsts[i] = dcur[0];
-            bool constant = true;
+            int32_t cdiff = 0;
             for (int n = 1; n < (zcount - i); ++n)
             {
                 const int32_t cn = dcur[n];
-                constant &= (cn == last);
-                int32_t cndiff = cn - last;
+                const int32_t cndiff = cn - last;
+                cdiff |= cndiff;
                 dnext[n-1] = cndiff;
                 last = cn;
             }
             lasts[i] = last;
 
-            if (constant)
+            if (!cdiff)
             {
                 int32_t fnum = firsts[i], lnum = lasts[i];
                 for (i = i - 1; i >= 0; --i)
