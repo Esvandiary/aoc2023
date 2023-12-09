@@ -90,8 +90,12 @@ int main(int argc, char** argv)
     const uint16_t soln = GETIDX('Z', 'Z', 'Z');
     while (src != soln)
     {
-        const uint8_t n = aInstructions[sum1++ % instructionCount];
-        src = destinations[DSTIDX(src, n)];
+        for (size_t i = 0; i < instructionCount; ++i)
+        {
+            const uint8_t n = aInstructions[i];
+            src = destinations[DSTIDX(src, n)];
+        }
+        sum1 += instructionCount;
     }
 
     print_uint64(sum1);
