@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#define ENABLE_DEBUGLOG
+// #define ENABLE_DEBUGLOG
 #include "../common/mmap.h"
 #include "../common/print.h"
 #include "../common/stopwatch.h"
@@ -35,10 +35,10 @@ static const char* dcNamesRaw[] = { "left", "none", "right", "swap" };
 static const char** dcNames = (dcNamesRaw + 1);
 
 static const uint8_t dcS[4*4] = {
-    DC_NONE,  DC_LEFT,  DC_SWAP,  DC_RIGHT, // first ED_TOP -> down
-    DC_RIGHT, DC_NONE,  DC_LEFT,  DC_SWAP,  // first ED_RIGHT -> left
-    DC_SWAP,  DC_RIGHT, DC_NONE,  DC_LEFT,  // first ED_BOTTOM -> up
-    DC_LEFT,  DC_SWAP,  DC_RIGHT, DC_NONE,  // first ED_LEFT -> right
+    DC_SWAP,  DC_LEFT,  DC_NONE,  DC_RIGHT, // first ED_TOP -> down
+    DC_RIGHT, DC_SWAP,  DC_LEFT,  DC_NONE,  // first ED_RIGHT -> left
+    DC_NONE,  DC_RIGHT, DC_SWAP,  DC_LEFT,  // first ED_BOTTOM -> up
+    DC_LEFT,  DC_NONE,  DC_RIGHT, DC_SWAP,  // first ED_LEFT -> right
 };
 
 static move offsets[4][128] = {0};
@@ -56,7 +56,7 @@ typedef struct fresult
 static inline FORCEINLINE fresult follow(const chartype* const start, const chartype* const s, const chartype* data, int entryDir, uint8_t gridchar)
 {
     int count = 0, dirchange = 0;
-    do
+    while (true)
     {
         // DEBUGLOG("data %p, entry dir %s, char %c\n", data, edNames[entryDir], *data);
         const char c = *data;
@@ -68,9 +68,12 @@ static inline FORCEINLINE fresult follow(const chartype* const start, const char
         grid[data - start] = gridchar;
         dirchanges[data - start] = offsets[entryDir][c].dirchange;
         data += offsets[entryDir][c].offset;
-        entryDir = offsets[entryDir][c].newdir;
         ++count;
-    } while (data != s);
+        if (data == s)
+            break;
+        entryDir = offsets[entryDir][c].newdir;
+    }
+    DEBUGLOG("got to S after %d steps with entry dir %s\n", count, edNames[entryDir]);
     grid[s - start] = gridchar;
     return (fresult) { .distance = count, .lastEntryDir = entryDir };
 }
@@ -180,16 +183,11 @@ int main(int argc, char** argv)
                     add = (add + 1) & 1;
                 }
             }
-            // DEBUGLOG("[%ld] got pipe part %c, dirchange %s, add now %u\n", gi, file.data[gi], dcNames[dirchanges[gi]], add);
         }
         else
         {
-            if (file.data[gi] == '\n')
-                DEBUGLOG("\n");
-            else
-                DEBUGLOG("%c", add ? 'I' : 'O');
+            DEBUGLOG("%c", file.data[gi] != '\n' ? (add ? 'I' : 'O') : '\n');
             sum2 += add;
-            // DEBUGLOG("[%ld] got non-pipe %c; adding %u, sum now %lu\n", gi, file.data[gi] != '\n' ? file.data[gi] : '\\', add, sum2);
         }
     }
 
