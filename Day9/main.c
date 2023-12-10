@@ -25,31 +25,33 @@ int main(int argc, char** argv)
     size_t idx = 0;
     int64_t sum1 = 0, sum2 = 0;
 
-    while (idx < file.size)
+    chartype* data = file.data;
+    chartype* end = file.data + fileSize;
+    while (data < end)
     {
         size_t zcount = 0;
-        while (idx < file.size)
+        while (data < end)
         {
             int32_t num = 0;
             int32_t sign;
-            if (file.data[idx] == '-')
+            if (*data == '-')
             {
                 sign = -1;
-                ++idx;
+                ++data;
             }
             else
             {
                 sign = 1;
             }
-            while (isdigit(file.data[idx]))
+            while (isdigit(*data))
             {
                 num *= 10;
-                num += file.data[idx++] & 0xF;
+                num += *data++ & 0xF;
             }
             num *= sign;
 
             dlist[zcount++] = num;
-            if (file.data[idx++] == '\n')
+            if (*data++ == '\n')
                 break;
         }
 
