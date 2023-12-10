@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 // #define ENABLE_DEBUGLOG
+// #define ENABLE_DSTOPWATCH
 #include "../common/mmap.h"
 #include "../common/print.h"
 #include "../common/stopwatch.h"
@@ -19,20 +20,25 @@
 #define ED_OPPOSITE(x) (((x) + 2) & 3)
 
 #define DC_NONE 0
-#define DC_LEFT -1
-#define DC_RIGHT 1
-#define DC_SWAP 2
+#define DC_LEFT 1
+#define DC_RIGHT 2
+#define DC_SWAP 3
 
 typedef struct move
 {
     int16_t offset;
-    int8_t newdir;
-    int8_t dirchange;
+    uint8_t newdir;
+    uint8_t dirchange;
 } move;
 
+typedef struct gridentry
+{
+    uint8_t idx;
+    uint8_t dirchange;
+} gridentry;
+
 static const char* edNames[] = { "top", "right", "bottom", "left" };
-static const char* dcNamesRaw[] = { "left", "none", "right", "swap" };
-static const char** dcNames = (dcNamesRaw + 1);
+static const char* dcNames[] = { "none", "left", "right", "swap" };
 
 static const uint8_t dcS[4*4] = {
     DC_SWAP,  DC_LEFT,  DC_NONE,  DC_RIGHT, // first ED_TOP -> down
@@ -44,8 +50,7 @@ static const uint8_t dcS[4*4] = {
 static move offsets[4][128] = {0};
 static move startOffsets[4] = {0};
 
-static uint8_t grid[65536] = {0};
-static int8_t dirchanges[65536] = {0};
+static gridentry grid[65536] = {0};
 
 typedef struct fresult
 {
@@ -55,7 +60,7 @@ typedef struct fresult
 
 static inline FORCEINLINE fresult follow(const chartype* const start, const chartype* const s, const chartype* data, int entryDir, uint8_t gridchar)
 {
-    int count = 0, dirchange = 0;
+    int count = 0;
     while (true)
     {
         // DEBUGLOG("data %p, entry dir %s, char %c\n", data, edNames[entryDir], *data);
@@ -65,8 +70,7 @@ static inline FORCEINLINE fresult follow(const chartype* const start, const char
             DEBUGLOG("hit zero offset with entryDir %s char %c after %d steps\n", edNames[entryDir], *data, count);
             return (fresult) { .distance = -1, .lastEntryDir = -1 };
         }
-        grid[data - start] = gridchar;
-        dirchanges[data - start] = offsets[entryDir][c].dirchange;
+        grid[data - start] = (gridentry) { .idx = gridchar, .dirchange = offsets[entryDir][c].dirchange };
         data += offsets[entryDir][c].offset;
         ++count;
         if (data == s)
@@ -74,12 +78,14 @@ static inline FORCEINLINE fresult follow(const chartype* const start, const char
         entryDir = offsets[entryDir][c].newdir;
     }
     DEBUGLOG("got to S after %d steps with entry dir %s\n", count, edNames[entryDir]);
-    grid[s - start] = gridchar;
+    grid[s - start] = (gridentry) { .idx = gridchar, .dirchange = DC_NONE };
     return (fresult) { .distance = count, .lastEntryDir = entryDir };
 }
 
 int main(int argc, char** argv)
 {
+    DSTOPWATCH_START(init);
+
     mmap_file file = mmap_file_open_ro("input.txt");
     const int fileSize = (int)(file.size);
 
@@ -126,10 +132,13 @@ int main(int argc, char** argv)
         startOffsets[3] = (move) { .offset = -lineLength, .newdir = ED_BOTTOM };
     }
 
+    DSTOPWATCH_END(init);
+
     //
     // Part 1
     //
 
+    DSTOPWATCH_START(part1);
     int64_t sum1 = 0;
 
     int gidx;
@@ -150,48 +159,64 @@ int main(int argc, char** argv)
     sum1 = (result.distance + 1) / 2 + (result.distance + 1) % 2;
 
     print_int64(sum1);
+    DSTOPWATCH_END(part1);
 
     //
     // Part 2
     //
 
-    DEBUGLOG("start newdir = %d, last entry dir = %d\n", startOffsets[gidx].newdir, result.lastEntryDir);
-    dirchanges[s - file.data] = dcS[(startOffsets[gidx].newdir << 2) | result.lastEntryDir];
-    DEBUGLOG("s dirchange = %s\n", dcNames[dirchanges[s - file.data]]);
+    DSTOPWATCH_START(part2);
+    grid[s - file.data].dirchange = dcS[(startOffsets[gidx].newdir << 2) | result.lastEntryDir];
+    DEBUGLOG("s dirchange = %s\n", dcNames[grid[s - file.data].dirchange]);
 
     uint64_t sum2 = 0;
 
-    uint8_t entrydc = DC_NONE;
+    const int gidx1 = gidx + 1;
+    int8_t entrydc = DC_NONE;
     uint8_t add = 0;
-    for (size_t gi = 0; gi < fileSize; ++gi)
+
+    const gridentry* g = grid;
+    const gridentry* gend = grid + fileSize;
+    while (g < gend)
     {
-        if (grid[gi] == gidx + 1)
+        if (g->idx == gidx1)
         {
-            DEBUGLOG("%c", file.data[gi]);
-            if (entrydc == DC_NONE && dirchanges[gi] != DC_SWAP)
-                entrydc = dirchanges[gi];
-            if (dirchanges[gi] != DC_NONE)
+            DEBUGLOG("%c", file.data[g - grid]);
+            switch (g->dirchange)
             {
-                if (dirchanges[gi] == DC_SWAP)
-                {
-                    add = (add + 1) & 1;
+                case DC_SWAP:
+                    add = ~add & 1;
                     entrydc = DC_NONE;
-                }
-                else if (dirchanges[gi] != entrydc)
-                {
-                    entrydc = DC_NONE;
-                    add = (add + 1) & 1;
-                }
+                    break;
+                case DC_NONE:
+                    break;
+                default:
+                    if (entrydc == DC_NONE)
+                    {
+                        entrydc = g->dirchange;
+                    }
+                    else if (entrydc != g->dirchange)
+                    {
+                        add = ~add & 1;
+                        entrydc = DC_NONE;
+                    }
+                    break;
             }
         }
         else
         {
-            DEBUGLOG("%c", file.data[gi] != '\n' ? (add ? 'I' : 'O') : '\n');
+            DEBUGLOG("%c", file.data[g - grid] != '\n' ? (add ? 'I' : 'O') : '\n');
             sum2 += add;
         }
+        ++g;
     }
 
     print_uint64(sum2);
+    DSTOPWATCH_END(part2);
+
+    DSTOPWATCH_PRINT(init);
+    DSTOPWATCH_PRINT(part1);
+    DSTOPWATCH_PRINT(part2);
 
     return 0;
 }
