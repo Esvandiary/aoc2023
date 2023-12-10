@@ -42,9 +42,9 @@ static const char* dcNames[] = { "none", "left", "right", "swap" };
 
 static const uint8_t dcS[4*4] = {
     DC_SWAP,  DC_LEFT,  DC_NONE,  DC_RIGHT, // first ED_TOP -> down
-    DC_RIGHT, DC_SWAP,  DC_LEFT,  DC_NONE,  // first ED_RIGHT -> left
+    DC_RIGHT, DC_NONE,  DC_LEFT,  DC_NONE,  // first ED_RIGHT -> left
     DC_NONE,  DC_RIGHT, DC_SWAP,  DC_LEFT,  // first ED_BOTTOM -> up
-    DC_LEFT,  DC_NONE,  DC_RIGHT, DC_SWAP,  // first ED_LEFT -> right
+    DC_LEFT,  DC_NONE,  DC_RIGHT, DC_NONE,  // first ED_LEFT -> right
 };
 
 static move offsets[4][128] = {0};
