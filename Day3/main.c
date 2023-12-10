@@ -2,8 +2,10 @@
 #include <stdint.h>
 #include <stdlib.h>
 // #define ENABLE_DEBUGLOG
+// #define ENABLE_DSTOPWATCH
 #include "../common/mmap.h"
 #include "../common/print.h"
+#include "../common/stopwatch.h"
 #include "../common/vuctor.h"
 
 
@@ -33,6 +35,7 @@ int main(int argc, char** argv)
     mmap_file file = mmap_file_open_ro("input.txt");
     const int textLength = (int)(file.size);
 
+    DSTOPWATCH_START(line);
     // get line length
     int lineLength = 0;
     for (int i = 0; i < textLength; ++i)
@@ -43,7 +46,8 @@ int main(int argc, char** argv)
             break;
         }
     }
-    const int lineCount = ((textLength + lineLength / 2) / (lineLength + 1));
+    DSTOPWATCH_END(line);
+    DSTOPWATCH_PRINT(line);
 
     number* numbers = (number*)calloc((uint32_t)textLength, sizeof(number));
 
@@ -57,21 +61,33 @@ int main(int argc, char** argv)
     // Part 1
     //
 
+    DSTOPWATCH_START(part1);
     int sum1 = 0;
+
+    static void* charjumps[] = {
+        &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  // 00
+        &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  // 10
+        &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&gear,  &&null,  &&null,  &&null,  &&null,  &&null,  // 20
+        &&digit, &&digit, &&digit, &&digit, &&digit, &&digit, &&digit, &&digit, &&digit, &&digit, &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  // 30
+        &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  // 40
+        &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  // 50
+        &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  // 60
+        &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  // 70
+    };
 
     while (data < end)
     {
-        const char c = *data;
-        if (!isdigit(c))
-        {
-            if (c == '*')
-                gears[gearCount++] = data - file.data;
-            ++data;
-            continue;
-        }
+        goto *charjumps[*data];
 
+    gear:
+        gears[gearCount++] = data - file.data;
+    null:
+        ++data;
+        continue;
+
+    digit:
         chartype* numend = data + 1;
-        int num = c & 0xF;
+        int num = *data & 0xF;
         while (isdigit(*numend))
         {
             num *= 10;
@@ -119,6 +135,8 @@ int main(int argc, char** argv)
     next:
         data = numend;
     }
+    DSTOPWATCH_END(part1);
+    DSTOPWATCH_PRINT(part1);
 
     print_uint64(sum1);
 
@@ -126,6 +144,7 @@ int main(int argc, char** argv)
     // Part 2
     //
 
+    DSTOPWATCH_START(part2);
     int sum2 = 0;
 
     for (int gi = 0; gi < gearCount; ++gi)
@@ -159,6 +178,8 @@ int main(int argc, char** argv)
         if (numCount == 2)
             sum2 += mul;
     }
+    DSTOPWATCH_END(part2);
+    DSTOPWATCH_PRINT(part2);
 
     print_uint64(sum2);
 
