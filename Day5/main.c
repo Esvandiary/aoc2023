@@ -18,11 +18,17 @@ typedef struct mapping
     uint64_t range;
 } mapping;
 
+typedef struct mappingdata
+{
+    mapping mapping[1024];
+    size_t size;
+} mappingdata;
+
 static const char* const logspaces[] = {"  ", "    ", "      ", "        ", "          ", "            ", "              "};
 
-static uint64_t part2_lookup(const vuctor* mappings, const int depth, const uint64_t curStart, const uint64_t curRange)
+static uint64_t part2_lookup(const mappingdata* mappings, const int depth, const uint64_t curStart, const uint64_t curRange)
 {
-    const vuctor* mv = &mappings[depth];
+    const mappingdata* mv = &mappings[depth];
 
     DEBUGLOG("%s[->] part2_lookup depth=%d [%" PRIu64 " + %" PRIu64 "]\n", logspaces[depth], depth, curStart, curRange);
 
@@ -32,11 +38,11 @@ static uint64_t part2_lookup(const vuctor* mappings, const int depth, const uint
     while (cur < curEnd)
     {
         // find next mapping
-        mapping* nextMapping = NULL;
+        const mapping* nextMapping = NULL;
         uint64_t nextMapStart = UINT64_MAX;
         for (int i = 0; i < mv->size; ++i)
         {
-            mapping* m = VUCTOR_GET_PTR(*mv, mapping, i);
+            const mapping* m = mv->mapping + i;
             if (cur < m->srcStart + m->range && m->srcStart < curEnd && m->srcStart < nextMapStart)
             {
                 nextMapping = m;
@@ -71,18 +77,15 @@ static uint64_t part2_lookup(const vuctor* mappings, const int depth, const uint
     return value;
 }
 
+static uint32_t seeds[256];
+static mappingdata maps[MAPPING_COUNT];
+
 int main(int argc, char** argv)
 {
     mmap_file file = mmap_file_open_ro("input.txt");
     const int fileSize = (int)(file.size);
 
-    vuctor seeds = VUCTOR_INIT;
-    VUCTOR_RESERVE(seeds, uint32_t, 128);
-
-    vuctor mappings[MAPPING_COUNT];
-    memset(mappings, 0, sizeof(mappings));
-    for (int i = 0; i < MAPPING_COUNT; ++i)
-        VUCTOR_RESERVE(mappings[i], mapping, 128);
+    size_t seedCount = 0;
 
     int lineIdx = 7; // 'seeds: '
 
@@ -96,10 +99,10 @@ int main(int argc, char** argv)
             ++lineIdx;
         }
         ++lineIdx; // space
-        VUCTOR_ADD(seeds, uint32_t, num);
+        seeds[seedCount++] = num;
     }
 
-    vuctor* current = NULL;
+    mappingdata* current = NULL;
     while (lineIdx < fileSize)
     {
         if (!isdigit(file.data[lineIdx]))
@@ -110,22 +113,22 @@ int main(int argc, char** argv)
                     ++lineIdx;
                     continue;
                 case 's':
-                    current = (file.data[lineIdx+1] == 'e') ? &mappings[0] : &mappings[1];
+                    current = maps + ((file.data[lineIdx+1] == 'e') ? 0 : 1);
                     break;
                 case 'f':
-                    current = &mappings[2];
+                    current = maps + 2;
                     break;
                 case 'w':
-                    current = &mappings[3];
+                    current = maps + 3;
                     break;
                 case 'l':
-                    current = &mappings[4];
+                    current = maps + 4;
                     break;
                 case 't':
-                    current = &mappings[5];
+                    current = maps + 5;
                     break;
                 case 'h':
-                    current = &mappings[6];
+                    current = maps + 6;
                     break;
                 default:
                     printf("got unexpected line\n");
@@ -162,10 +165,11 @@ int main(int argc, char** argv)
         }
         ++lineIdx;
 
-        mapping* map = VUCTOR_ADD_NOINIT(*current, mapping);
-        map->srcStart = srcStart;
-        map->dstStart = dstStart;
-        map->range = range;
+        current->mapping[current->size].srcStart = srcStart;
+        current->mapping[current->size].dstStart = dstStart;
+        current->mapping[current->size].range = range;
+        ++current->size;
+
     }
 
     //
@@ -174,16 +178,16 @@ int main(int argc, char** argv)
 
     uint64_t sum1 = UINT64_MAX;
 
-    for (int seedIdx = 0; seedIdx < seeds.size; ++seedIdx)
+    for (int seedIdx = 0; seedIdx < seedCount; ++seedIdx)
     {
-        uint32_t seed = VUCTOR_GET(seeds, uint32_t, seedIdx);
+        uint32_t seed = seeds[seedIdx];
 
         uint64_t next = seed;
         for (int m = 0; m < MAPPING_COUNT; ++m)
         {
-            for (int i = 0; i < mappings[m].size; ++i)
+            for (int i = 0; i < maps[m].size; ++i)
             {
-                mapping map = VUCTOR_GET(mappings[m], mapping, i);
+                mapping map = maps[m].mapping[i];
                 uint64_t diff = next - map.srcStart; // abuse negative overflow
                 if (diff < map.range)
                 {
@@ -204,13 +208,13 @@ int main(int argc, char** argv)
 
     uint64_t sum2 = UINT64_MAX;
 
-    for (int seedIdx = 0; seedIdx < seeds.size; seedIdx += 2)
+    for (int seedIdx = 0; seedIdx < seedCount; seedIdx += 2)
     {
-        uint32_t seedStart = VUCTOR_GET(seeds, uint32_t, seedIdx);
-        uint32_t seedRange = VUCTOR_GET(seeds, uint32_t, seedIdx + 1);
+        uint32_t seedStart = seeds[seedIdx + 0];
+        uint32_t seedRange = seeds[seedIdx + 1];
         DEBUGLOG("checking seed range [%u + %u]\n", seedStart, seedRange);
 
-        uint64_t value = part2_lookup(mappings, 0, seedStart, seedRange);
+        uint64_t value = part2_lookup(maps, 0, seedStart, seedRange);
         sum2 = MIN(sum2, value);
         DEBUGLOG("checked seed range [%u + %u], value = %" PRIu64 ", sum2 = %" PRIu64 "\n", seedStart, seedRange, value, sum2);
     }
