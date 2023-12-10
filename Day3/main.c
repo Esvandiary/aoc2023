@@ -11,6 +11,17 @@
 
 #define dataindex(y, x) (((y) * (lineLength + 1)) + (x))
 
+static const uint8_t issymbol[] = {
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, // 00
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 10
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, // 20
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, // 30
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 40
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 50
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 60
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 70
+};
+
 typedef struct number
 {
     int number;
@@ -60,7 +71,7 @@ int main(int argc, char** argv)
         }
 
         chartype* numend = data + 1;
-        int num = *data & 0xF;
+        int num = c & 0xF;
         while (numend < end && isdigit(*numend))
         {
             num *= 10;
@@ -72,7 +83,7 @@ int main(int argc, char** argv)
         const size_t len = numend - data;
         numbers[idx] = (number) { .number = num, .length = len };
 
-        if ((idx != 0 && data[-1] != '.' && data[-1] != '\n') || (numend[0] != '.' && numend[0] != '\n'))
+        if ((idx != 0 && issymbol[data[-1]]) || (issymbol[numend[0]]))
         {
             sum1 += num;
             goto next;
@@ -83,7 +94,7 @@ int main(int argc, char** argv)
             chartype* cend = file.data + idx + len - lineLength;
             while (ccur < cend)
             {
-                if (*ccur != '.' && *ccur != '\n')
+                if (issymbol[*ccur])
                 {
                     sum1 += num;
                     goto next;
@@ -97,7 +108,7 @@ int main(int argc, char** argv)
             chartype* cend = file.data + idx + len + lineLength + 2;
             while (ccur < cend)
             {
-                if (*ccur != '.' && *ccur != '\n')
+                if (issymbol[*ccur])
                 {
                     sum1 += num;
                     goto next;
@@ -119,16 +130,16 @@ int main(int argc, char** argv)
 
     for (int gi = 0; gi < gearCount; ++gi)
     {
-        int gidx = gears[gi];
-        int y = gidx / (lineLength + 1);
-        int x = gidx % (lineLength + 1);
+        const int gidx = gears[gi];
+        const int y = gidx / (lineLength + 1);
+        const int x = gidx % (lineLength + 1);
 
         int numCount = 0;
         int mul = 1;
 
-        for (int cy = MAX(0, y - 1); cy <= MIN(lineCount - 1, y + 1); ++cy)
+        for (int cy = y - 1; cy <= y + 1; ++cy)
         {
-            for (int cx = MAX(0, x - 1); cx <= x + 1; ++cx)
+            for (int cx = x - 1; cx <= x + 1; ++cx)
             {
                 size_t idx = dataindex(cy, cx);
                 if (isdigit(file.data[idx]))
