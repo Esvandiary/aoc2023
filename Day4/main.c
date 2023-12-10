@@ -9,13 +9,13 @@
 
 #define isdigit(c) ((c) >= '0' && (c) <= '9')
 
+static uint8_t cards[2048];
+static uint64_t counts[2048] = {0};
+
 int main(int argc, char** argv)
 {
     mmap_file file = mmap_file_open_ro("input.txt");
     const int fileSize = (int)(file.size);
-
-    vuctor cards = VUCTOR_INIT;
-    VUCTOR_RESERVE(cards, uint8_t, 1024);
 
     int sum1 = 0;
 
@@ -56,10 +56,9 @@ int main(int argc, char** argv)
                 ++matchCount;
         }
 
-        VUCTOR_ADD(cards, uint8_t, matchCount);
+        cards[lineNum++] = matchCount;
         sum1 += (1U << matchCount) >> 1;
         ++idx;
-        ++lineNum;
     }
 
     //
@@ -72,18 +71,16 @@ int main(int argc, char** argv)
     // Part 2
     //
 
-    uint64_t* counts = (uint64_t*)calloc(lineNum, sizeof(uint64_t));
+    uint64_t sum2 = 0;
+
     for (int i = 0; i < lineNum; ++i)
     {
-        const int lineMax = MIN(lineNum, i + VUCTOR_GET(cards, uint8_t, i) + 1);
+        const int lineMax = MIN(lineNum, i + cards[i] + 1);
         counts[i] += 1;
         for (int ni = i + 1; ni < lineMax; ++ni)
             counts[ni] += counts[i];
-    }
-
-    uint64_t sum2 = 0;
-    for (int i = 0; i < lineNum; ++i)
         sum2 += counts[i];
+    }
 
     print_uint64(sum2);
 
