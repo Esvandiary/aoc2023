@@ -128,6 +128,10 @@ static size_t parse_hand(const chartype* s, uint64_t* out1, uint64_t* out2)
     return (s - s_start);
 }
 
+static uint64_t games[4096];
+static uint64_t games2[4096];
+static uint64_t buf[4096];
+
 int main(int argc, char** argv)
 {
     mmap_file file = mmap_file_open_ro("input.txt");
@@ -137,10 +141,7 @@ int main(int argc, char** argv)
     // Part 1 + 2
     //
 
-    vuctor games = VUCTOR_INIT;
-    vuctor games2 = VUCTOR_INIT;
-    VUCTOR_RESERVE(games, uint64_t, 2048);
-    VUCTOR_RESERVE(games2, uint64_t, 2048);
+    size_t gamesCount = 0, games2Count = 0;
 
     uint64_t sum1 = 0;
 
@@ -149,32 +150,29 @@ int main(int argc, char** argv)
     {
         uint64_t n, n2;
         idx += parse_hand(file.data + idx, &n, &n2);
-        VUCTOR_ADD(games, uint64_t, n);
-        VUCTOR_ADD(games2, uint64_t, n2);
+        games[gamesCount++] = n;
+        games2[games2Count++] = n2;
         ++idx; // '\n'
     }
 
-    uint64_t* buf = (uint64_t*)malloc(sizeof(uint64_t) * games.size);
-    radixSort((uint64_t*)games.data, games.size, buf);
+    radixSort(games, gamesCount, buf);
 
-    size_t rank = 1;
-    for (int c = 0; c < games.size; ++c)
+    for (int c = 0; c < gamesCount; ++c)
     {
-        uint32_t bid = VUCTOR_GET(games, uint64_t, c) & 0x3FFFFFFF;
-        sum1 += (bid * rank++);
+        uint32_t bid = games[c] & 0x3FFFFFFF;
+        sum1 += (bid * (c + 1));
     }
 
     print_uint64(sum1);
 
     uint64_t sum2 = 0;
 
-    radixSort((uint64_t*)games2.data, games2.size, buf);
+    radixSort(games2, games2Count, buf);
 
-    rank = 1;
-    for (int c = 0; c < games2.size; ++c)
+    for (int c = 0; c < games2Count; ++c)
     {
-        uint32_t bid = VUCTOR_GET(games2, uint64_t, c) & 0x3FFFFFFF;
-        sum2 += (bid * rank++);
+        uint32_t bid = games2[c] & 0x3FFFFFFF;
+        sum2 += (bid * (c + 1));
     }
 
     print_uint64(sum2);
