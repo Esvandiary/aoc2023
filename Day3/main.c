@@ -26,16 +26,18 @@ static const uint8_t issymbol[] = {
 
 typedef struct number
 {
-    int number;
-    int length;
+    int16_t number;
+    int16_t length;
 } number;
+
+static number numbers[65536] = {0};
 
 int main(int argc, char** argv)
 {
     mmap_file file = mmap_file_open_ro("input.txt");
     const int textLength = (int)(file.size);
 
-    DSTOPWATCH_START(line);
+    DSTOPWATCH_START(init);
     // get line length
     int lineLength = 0;
     for (int i = 0; i < textLength; ++i)
@@ -46,16 +48,15 @@ int main(int argc, char** argv)
             break;
         }
     }
-    DSTOPWATCH_END(line);
-    DSTOPWATCH_PRINT(line);
-
-    number* numbers = (number*)calloc((uint32_t)textLength, sizeof(number));
 
     int gears[8192];
     size_t gearCount = 0;
 
     chartype* data = file.data + 1;
     chartype* end = file.data + textLength;
+
+    DSTOPWATCH_END(init);
+    DSTOPWATCH_PRINT(init);
 
     //
     // Part 1
@@ -97,7 +98,8 @@ int main(int argc, char** argv)
 
         const size_t idx = data - file.data;
         const size_t len = numend - data;
-        numbers[idx] = (number) { .number = num, .length = len };
+        for (int i = 0; i < len; ++i)
+            numbers[idx+i] = (number) { .number = num, .length = len - i };
 
         if (issymbol[data[-1]] || issymbol[numend[0]])
         {
@@ -163,11 +165,6 @@ int main(int argc, char** argv)
                 size_t idx = dataindex(cy, cx);
                 if (isdigit(file.data[idx]))
                 {
-                    while (!numbers[idx].length)
-                    {
-                        --idx;
-                        --cx;
-                    }
                     mul *= numbers[idx].number;
                     ++numCount;
                     cx += numbers[idx].length;
