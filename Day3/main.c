@@ -72,7 +72,7 @@ int main(int argc, char** argv)
 
         chartype* numend = data + 1;
         int num = c & 0xF;
-        while (numend < end && isdigit(*numend))
+        while (isdigit(*numend))
         {
             num *= 10;
             num += *numend & 0xF;
@@ -90,8 +90,8 @@ int main(int argc, char** argv)
         }
         if (idx >= lineLength + 1)
         {
-            chartype* ccur = file.data + MAX(0, idx - lineLength - 2);
-            chartype* cend = file.data + idx + len - lineLength;
+            chartype* ccur = data - MIN(idx, lineLength + 2);
+            chartype* cend = data + len - lineLength;
             while (ccur < cend)
             {
                 if (issymbol[*ccur])
@@ -104,8 +104,8 @@ int main(int argc, char** argv)
         }
         if (numend + lineLength + 1 < end)
         {
-            chartype* ccur = file.data + idx + lineLength;
-            chartype* cend = file.data + idx + len + lineLength + 2;
+            chartype* ccur = data + lineLength;
+            chartype* cend = data + len + lineLength + 2;
             while (ccur < cend)
             {
                 if (issymbol[*ccur])
