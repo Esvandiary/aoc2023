@@ -50,7 +50,7 @@ int main(int argc, char** argv)
     int gears[8192];
     size_t gearCount = 0;
 
-    chartype* data = file.data;
+    chartype* data = file.data + 1;
     chartype* end = file.data + textLength;
 
     //
@@ -83,7 +83,7 @@ int main(int argc, char** argv)
         const size_t len = numend - data;
         numbers[idx] = (number) { .number = num, .length = len };
 
-        if ((idx != 0 && issymbol[data[-1]]) || (issymbol[numend[0]]))
+        if (issymbol[data[-1]] || issymbol[numend[0]])
         {
             sum1 += num;
             goto next;
