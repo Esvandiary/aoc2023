@@ -31,41 +31,42 @@ int main(int argc, char** argv)
 
     Race race2;
 
-    int idx = 9; // 'Distance:'
+    const chartype* data = file.data + 9; // 'Distance:'
+    const chartype* const end = file.data + fileSize;
     uint64_t num2 = 0;
-    while (idx < file.size && file.data[idx] != '\n')
+    while (*data != '\n')
     {
-        ++idx; // space
-        while (!isdigit(file.data[idx]))
-            ++idx;
+        ++data; // space
+        while (!isdigit(*data))
+            ++data;
         uint64_t num = 0;
-        while (isdigit(file.data[idx]))
+        while (isdigit(*data))
         {
             num *= 10;
-            num += file.data[idx] & 0xF;
+            num += *data & 0xF;
             num2 *= 10;
-            num2 += file.data[idx] & 0xF;
-            ++idx;
+            num2 += *data & 0xF;
+            ++data;
         }
         aRaces1[aRaces1Count++].time = num;
     }
     race2.time = num2;
     num2 = 0;
-    idx += 10; // '\nDistance:'
+    data += 10; // '\nDistance:'
     int raceIdx = 0;
-    while (idx < file.size && file.data[idx] != '\n')
+    while (*data != '\n')
     {
-        ++idx; // space
-        while (!isdigit(file.data[idx]))
-            ++idx;
+        ++data; // space
+        while (!isdigit(*data))
+            ++data;
         uint64_t num = 0;
-        while (isdigit(file.data[idx]))
+        while (isdigit(*data))
         {
             num *= 10;
-            num += file.data[idx] & 0xF;
+            num += *data & 0xF;
             num2 *= 10;
-            num2 += file.data[idx] & 0xF;
-            ++idx;
+            num2 += *data & 0xF;
+            ++data;
         }
         aRaces1[raceIdx++].record = num;
     }
