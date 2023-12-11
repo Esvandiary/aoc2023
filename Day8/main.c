@@ -7,7 +7,6 @@
 #include "../common/mmap.h"
 #include "../common/print.h"
 #include "../common/stopwatch.h"
-#include "../common/vuctor.h"
 
 #define isdigit(c) ((c) >= '0' && (c) <= '9')
 
@@ -40,13 +39,15 @@ static inline uint64_t lcm(const uint64_t* a, size_t size)
     }
 }
 
+uint16_t aaaaaa[64];
+uint64_t periods[64] = {0};
+
 int main(int argc, char** argv)
 {
     mmap_file file = mmap_file_open_ro("input.txt");
     const int fileSize = (int)(file.size);
 
-    vuctor aaaaaa = VUCTOR_INIT;
-    VUCTOR_RESERVE(aaaaaa, uint16_t, 64);
+    size_t aaaaaaCount = 0;
 
     size_t idx = 0;
     while (idx < file.size && file.data[idx] != '\n')
@@ -74,7 +75,7 @@ int main(int argc, char** argv)
         destinations[DSTIDX(src, 1)] = dright;
 
         if ((src & 0x1F) == 1)
-            VUCTOR_ADD(aaaaaa, uint16_t, src);
+            aaaaaa[aaaaaaCount++] = src;
     }
     DSTOPWATCH_END(parsing);
     DSTOPWATCH_PRINT(parsing);
@@ -109,12 +110,9 @@ int main(int argc, char** argv)
     DSTOPWATCH_START(part2);
     uint64_t sum2 = 0;
 
-    uint16_t* const aaaaaaa = VUCTOR_GET_PTR(aaaaaa, uint16_t, 0);
-    uint64_t* const periods = (uint64_t*)calloc(aaaaaa.size, sizeof(uint64_t));
-
-    for (size_t i = 0; i < aaaaaa.size; ++i)
+    for (size_t i = 0; i < aaaaaaCount; ++i)
     {
-        if (aaaaaaa[i] == GETIDX('A','A','A'))
+        if (aaaaaa[i] == GETIDX('A','A','A'))
         {
             DEBUGLOG("skipping AAA -> ZZZ\n");
             periods[i] = sum1;
@@ -127,10 +125,10 @@ int main(int argc, char** argv)
             {
                 const uint8_t n = aInstructions[j];
                 // DEBUGLOG("[%5lu] [%c] [%c%c%c --> %c%c%c]\n", iter, n ? 'R' : 'L', CHARLIST(aaaaaaa[i]), CHARLIST(destinations[DSTIDX(aaaaaaa[i], n)]));
-                aaaaaaa[i] = destinations[DSTIDX(aaaaaaa[i], n)];
+                aaaaaa[i] = destinations[DSTIDX(aaaaaa[i], n)];
             }
             iter += instructionCount;
-            if ((aaaaaaa[i] & 0x1F) == 26)
+            if ((aaaaaa[i] & 0x1F) == 26)
             {
                 periods[i] = iter;
                 break;
@@ -145,7 +143,7 @@ int main(int argc, char** argv)
     //     DEBUGLOG("[%zu] %lu\n", i, periods[i]);
 
     DSTOPWATCH_START(lcm);
-    sum2 = lcm(periods, aaaaaa.size);
+    sum2 = lcm(periods, aaaaaaCount);
     DSTOPWATCH_END(lcm);
     DSTOPWATCH_PRINT(lcm);
 
