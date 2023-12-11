@@ -61,7 +61,7 @@ static inline FORCEINLINE uint64_t get_ht(uint8_t maxCount, uint8_t secondCount)
     return htidx[(maxCount << 3) | secondCount];
 }
 
-static size_t parse_hand(const chartype* s, uint64_t* out1, uint64_t* out2)
+static inline FORCEINLINE size_t parse_hand(const chartype* s, uint64_t* out1, uint64_t* out2)
 {
     // format
     //  63     ...     30 29    0
