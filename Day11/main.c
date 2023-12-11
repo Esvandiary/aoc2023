@@ -98,22 +98,17 @@ int main(int argc, char** argv)
     {
         for (int j = i + 1; j < galaxyCount; ++j)
         {
-            DEBUGLOG("galaxy %d --> %d\n", i + 1, j + 1);
             const int y1 = dataY(galaxies[i]), y2 = dataY(galaxies[j]);
-            DEBUGLOG("    Y from %d --> %d\n", y1, y2);
             if (y1 != y2)
             {
                 sum1 += ydistances1[(y1 << 9) | y2];
                 sum2 += ydistances2[(y1 << 9) | y2];
-                DEBUGLOG("    adding %d to part 1, sum now %ld\n", ydistances1[(y1 << 9) | y2], sum1);
             }
             const int x1 = dataX(galaxies[i]), x2 = dataX(galaxies[j]);
-            DEBUGLOG("    X from %d --> %d\n", x1, x2);
             if (x1 != x2)
             {
                 sum1 += xdistances1[(x1 << 9) | x2];
                 sum2 += xdistances2[(x1 << 9) | x2];
-                DEBUGLOG("    adding %d to part 1, sum now %ld\n", xdistances1[(x1 << 9) | x2], sum1);
             }
         }
     }
