@@ -109,7 +109,7 @@ int main(int argc, char** argv)
         if (idx >= lineLength + 1)
         {
             chartype* ccur = data - MIN(idx, lineLength + 2);
-            chartype* cend = data + len - lineLength;
+            chartype* cend = numend - lineLength;
             while (ccur < cend)
             {
                 if (issymbol[*ccur])
@@ -123,7 +123,7 @@ int main(int argc, char** argv)
         if (numend + lineLength + 1 < end)
         {
             chartype* ccur = data + lineLength;
-            chartype* cend = data + len + lineLength + 2;
+            chartype* cend = numend + lineLength + 2;
             while (ccur < cend)
             {
                 if (issymbol[*ccur])
@@ -160,14 +160,15 @@ int main(int argc, char** argv)
 
         for (int cy = y - 1; cy <= y + 1; ++cy)
         {
-            for (int cx = x - 1; cx <= x + 1; ++cx)
+            int cidx = dataindex(cy, x-1);
+            const int cidxEnd = cidx + 2;
+            for (; cidx <= cidxEnd; ++cidx)
             {
-                size_t idx = dataindex(cy, cx);
-                if (isdigit(file.data[idx]))
+                if (isdigit(file.data[cidx]))
                 {
-                    mul *= numbers[idx].number;
+                    mul *= numbers[cidx].number;
                     ++numCount;
-                    cx += numbers[idx].length;
+                    cidx += numbers[cidx].length;
                 }
             }
         }
