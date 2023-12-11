@@ -49,27 +49,28 @@ int main(int argc, char** argv)
 
     size_t aaaaaaCount = 0;
 
-    size_t idx = 0;
-    while (idx < file.size && file.data[idx] != '\n')
+    chartype* data = file.data;
+    chartype* const end = file.data + fileSize;
+    while (data < end && *data != '\n')
     {
-        file.data[idx] = (file.data[idx] >> 4) & 1;
-        ++idx;
+        *data = (*data >> 4) & 1;
+        ++data;
     }
     const uint8_t* aInstructions = (const uint8_t*)(file.data);
-    size_t instructionCount = idx;
-    idx += 2; // '\n\n'
+    size_t instructionCount = data - file.data;
+    data += 2; // '\n\n'
 
     uint16_t destinations[1U << 16];
 
     DSTOPWATCH_START(parsing);
-    while (idx < file.size)
+    while (data < end)
     {
-        uint16_t src = GETIDX(file.data[idx++], file.data[idx++], file.data[idx++]);
-        idx += 4; // ' = (';
-        uint16_t dleft = GETIDX(file.data[idx++], file.data[idx++], file.data[idx++]);
-        idx += 2; // ', '
-        uint16_t dright = GETIDX(file.data[idx++], file.data[idx++], file.data[idx++]);
-        idx += 2; // ')\n'
+        uint16_t src = GETIDX(*data++, *data++, *data++);
+        data += 4; // ' = (';
+        uint16_t dleft = GETIDX(*data++, *data++, *data++);
+        data += 2; // ', '
+        uint16_t dright = GETIDX(*data++, *data++, *data++);
+        data += 2; // ')\n'
 
         destinations[DSTIDX(src, 0)] = dleft;
         destinations[DSTIDX(src, 1)] = dright;
