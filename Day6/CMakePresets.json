@@ -11,7 +11,10 @@
             "binaryDir": "${sourceDir}/build",
             "displayName": "Makefiles",
             "description": "Makefiles!",
-            "generator": "Unix Makefiles"
+            "generator": "Unix Makefiles",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
         }
     ],
     "buildPresets": [
