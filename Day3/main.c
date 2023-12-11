@@ -65,77 +65,78 @@ int main(int argc, char** argv)
     DSTOPWATCH_START(part1);
     int sum1 = 0;
 
-    static void* charjumps[] = {
-        &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  // 00
-        &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  // 10
-        &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&gear,  &&null,  &&null,  &&null,  &&null,  &&null,  // 20
-        &&digit, &&digit, &&digit, &&digit, &&digit, &&digit, &&digit, &&digit, &&digit, &&digit, &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  // 30
-        &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  // 40
-        &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  // 50
-        &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  // 60
-        &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  &&null,  // 70
-    };
-
     while (data < end)
     {
-        goto *charjumps[*data];
-
-    gear:
-        gears[gearCount++] = data - file.data;
-    null:
-        ++data;
-        continue;
-
-    digit:
-        chartype* numend = data + 1;
-        int num = *data & 0xF;
-        while (isdigit(*numend))
+        switch (*data)
         {
-            num *= 10;
-            num += *numend & 0xF;
-            ++numend;
-        }
-
-        const size_t idx = data - file.data;
-        const size_t len = numend - data;
-        for (int i = 0; i < len; ++i)
-            numbers[idx+i] = (number) { .number = num, .length = len - i };
-
-        if (issymbol[data[-1]] || issymbol[numend[0]])
-        {
-            sum1 += num;
-            goto next;
-        }
-        if (idx >= lineLength + 1)
-        {
-            chartype* ccur = data - MIN(idx, lineLength + 2);
-            chartype* cend = numend - lineLength;
-            while (ccur < cend)
-            {
-                if (issymbol[*ccur])
+            case '0':
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+            case '7':
+            case '8':
+            case '9':
                 {
-                    sum1 += num;
-                    goto next;
+                    chartype* numend = data + 1;
+                    int num = *data & 0xF;
+                    while (isdigit(*numend))
+                    {
+                        num *= 10;
+                        num += *numend & 0xF;
+                        ++numend;
+                    }
+
+                    const size_t idx = data - file.data;
+                    const size_t len = numend - data;
+                    for (int i = 0; i < len; ++i)
+                        numbers[idx+i] = (number) { .number = num, .length = len - i };
+
+                    if (issymbol[data[-1]] || issymbol[numend[0]])
+                    {
+                        sum1 += num;
+                        goto digitend;
+                    }
+                    if (idx >= lineLength + 1)
+                    {
+                        chartype* ccur = data - MIN(idx, lineLength + 2);
+                        chartype* cend = numend - lineLength;
+                        while (ccur < cend)
+                        {
+                            if (issymbol[*ccur])
+                            {
+                                sum1 += num;
+                                goto digitend;
+                            }
+                            ++ccur;
+                        }
+                    }
+                    if (numend + lineLength + 1 < end)
+                    {
+                        chartype* ccur = data + lineLength;
+                        chartype* cend = numend + lineLength + 2;
+                        while (ccur < cend)
+                        {
+                            if (issymbol[*ccur])
+                            {
+                                sum1 += num;
+                                goto digitend;
+                            }
+                            ++ccur;
+                        }
+                    }
+                digitend:
+                    data = numend;
                 }
-                ++ccur;
-            }
+                break;
+            case '*':
+                gears[gearCount++] = data - file.data;
+            default:
+                ++data;
+                break;
         }
-        if (numend + lineLength + 1 < end)
-        {
-            chartype* ccur = data + lineLength;
-            chartype* cend = numend + lineLength + 2;
-            while (ccur < cend)
-            {
-                if (issymbol[*ccur])
-                {
-                    sum1 += num;
-                    goto next;
-                }
-                ++ccur;
-            }
-        }
-    next:
-        data = numend;
     }
     DSTOPWATCH_END(part1);
     DSTOPWATCH_PRINT(part1);
