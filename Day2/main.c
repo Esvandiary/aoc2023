@@ -27,33 +27,33 @@ int main(int argc, char** argv)
     results[CR_G].Skip = 5;
     results[CR_B].Skip = 4;
 
-    int idx = 0;
+    const chartype* data = file.data;
+    const chartype* const end = file.data + fileSize;
     int lineNum = 1;
-    while (idx < fileSize)
+    while (data < end)
     {
         results[CR_R].Count = 0;
         results[CR_G].Count = 0;
         results[CR_B].Count = 0;
 
-        while (idx < fileSize && file.data[idx] != ':')
-            ++idx;
+        while (*data != ':')
+            ++data;
 
-        while (idx < fileSize && file.data[idx] != '\n')
+        while (*data != '\n')
         {
-            idx += 2;
+            data += 2;
             // number
             uint32_t num = 0;
-            while (isdigit(file.data[idx]))
+            while (isdigit(*data))
             {
                 num *= 10;
-                num += (file.data[idx++] & 0xF);
+                num += (*data++ & 0xF);
             }
-            // space
-            ++idx;
+            ++data; // ' '
             // colour
-            const uint8_t ridx = file.data[idx] & 0x1F;
+            const uint8_t ridx = *data & 0x1F;
             results[ridx].Count = MAX(results[ridx].Count, num);
-            idx += results[ridx].Skip;
+            data += results[ridx].Skip;
         }
 
         const int mask = ((results[CR_R].Count - 13) & (results[CR_G].Count - 14) & (results[CR_B].Count - 15)) >> 31;
@@ -61,7 +61,7 @@ int main(int argc, char** argv)
 
         sum2 += results[CR_R].Count * results[CR_G].Count * results[CR_B].Count;
 
-        ++idx;
+        ++data; // '\n'
         ++lineNum;
     }
 
