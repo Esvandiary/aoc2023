@@ -21,6 +21,10 @@ static uint8_t widths1[512] = { [0 ... 511] = 2 };
 static uint8_t heights1[512] = { [0 ... 511] = 2 };
 static uint32_t widths2[512] = { [0 ... 511] = 1000000 };
 static uint32_t heights2[512] = { [0 ... 511] = 1000000 };
+static int16_t ydistances1[512*512] = { [0 ... (512*512-1)] = -1 };
+static int32_t ydistances2[512*512] = { [0 ... (512*512-1)] = -1 };
+static int16_t xdistances1[512*512] = { [0 ... (512*512-1)] = -1 };
+static int32_t xdistances2[512*512] = { [0 ... (512*512-1)] = -1 };
 
 int main(int argc, char** argv)
 {
@@ -62,31 +66,54 @@ int main(int argc, char** argv)
     DSTOPWATCH_START(logic);
     int64_t sum1 = 0, sum2 = 0;
 
+    const int ymax = (fileSize / lineLength) + 1;
+    for (int y1 = 0; y1 < ymax - 1; ++y1)
+    {
+        if (heights1[y1] == 2)
+            continue;
+        int yd1 = 0, yd2 = 0;
+        for (int y2 = y1 + 1; y2 < ymax; ++y2)
+        {
+            yd1 += heights1[y2];
+            yd2 += heights2[y2];
+            ydistances1[(y1 << 9) | (y2)] = ydistances1[((y2) << 9) | y1] = yd1;
+            ydistances2[(y1 << 9) | (y2)] = ydistances2[((y2) << 9) | y1] = yd2;
+        }
+    }
+    for (int x1 = 0; x1 < lineLength - 2; ++x1)
+    {
+        if (widths1[x1] == 2)
+            continue;
+        int xd1 = 0, xd2 = 0;
+        for (int x2 = x1 + 1; x2 < lineLength - 1; ++x2)
+        {
+            xd1 += widths1[x2];
+            xd2 += widths2[x2];
+            xdistances1[(x1 << 9) | (x2)] = xdistances1[((x2) << 9) | x1] = xd1;
+            xdistances2[(x1 << 9) | (x2)] = xdistances2[((x2) << 9) | x1] = xd2;
+        }
+    }
+
     for (int i = 0; i < galaxyCount - 1; ++i)
     {
         for (int j = i + 1; j < galaxyCount; ++j)
         {
+            DEBUGLOG("galaxy %d --> %d\n", i + 1, j + 1);
             const int y1 = dataY(galaxies[i]), y2 = dataY(galaxies[j]);
+            DEBUGLOG("    Y from %d --> %d\n", y1, y2);
             if (y1 != y2)
             {
-                const int startY = MIN(y1, y2);
-                const int endY = MAX(y1, y2);
-                for (int cy = startY; cy < endY; ++cy)
-                {
-                    sum1 += heights1[cy];
-                    sum2 += heights2[cy];
-                }
+                sum1 += ydistances1[(y1 << 9) | y2];
+                sum2 += ydistances2[(y1 << 9) | y2];
+                DEBUGLOG("    adding %d to part 1, sum now %ld\n", ydistances1[(y1 << 9) | y2], sum1);
             }
             const int x1 = dataX(galaxies[i]), x2 = dataX(galaxies[j]);
+            DEBUGLOG("    X from %d --> %d\n", x1, x2);
             if (x1 != x2)
             {
-                const int startX = MIN(x1, x2);
-                const int endX = MAX(x1, x2);
-                for (int cx = startX; cx < endX; ++cx)
-                {
-                    sum1 += widths1[cx];
-                    sum2 += widths2[cx];
-                }
+                sum1 += xdistances1[(x1 << 9) | x2];
+                sum2 += xdistances2[(x1 << 9) | x2];
+                DEBUGLOG("    adding %d to part 1, sum now %ld\n", xdistances1[(x1 << 9) | x2], sum1);
             }
         }
     }
