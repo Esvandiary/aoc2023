@@ -16,15 +16,15 @@
 #define dataY(idx) ((idx) / lineLength)
 #define dataX(idx) ((idx) % lineLength)
 
-static int32_t galaxies[256];
+static int32_t galaxies[1024];
 static uint8_t widths1[512] = { [0 ... 511] = 2 };
 static uint8_t heights1[512] = { [0 ... 511] = 2 };
 static uint32_t widths2[512] = { [0 ... 511] = 1000000 };
 static uint32_t heights2[512] = { [0 ... 511] = 1000000 };
-static int16_t ydistances1[512*512] = { [0 ... (512*512-1)] = -1 };
-static int32_t ydistances2[512*512] = { [0 ... (512*512-1)] = -1 };
-static int16_t xdistances1[512*512] = { [0 ... (512*512-1)] = -1 };
-static int32_t xdistances2[512*512] = { [0 ... (512*512-1)] = -1 };
+static int16_t ydistances1[512*512] = { 0 };
+static int32_t ydistances2[512*512] = { 0 };
+static int16_t xdistances1[512*512] = { 0 };
+static int32_t xdistances2[512*512] = { 0 };
 
 int main(int argc, char** argv)
 {
@@ -57,15 +57,6 @@ int main(int argc, char** argv)
         ++data;
     }
 
-    DSTOPWATCH_END(init);
-
-    //
-    // Part 1 + 2
-    //
-
-    DSTOPWATCH_START(logic);
-    int64_t sum1 = 0, sum2 = 0;
-
     const int ymax = (fileSize / lineLength) + 1;
     for (int y1 = 0; y1 < ymax - 1; ++y1)
     {
@@ -76,8 +67,8 @@ int main(int argc, char** argv)
         {
             yd1 += heights1[y2];
             yd2 += heights2[y2];
-            ydistances1[(y1 << 9) | (y2)] = ydistances1[((y2) << 9) | y1] = yd1;
-            ydistances2[(y1 << 9) | (y2)] = ydistances2[((y2) << 9) | y1] = yd2;
+            ydistances1[(y1 << 9) | y2] = ydistances1[(y2 << 9) | y1] = yd1;
+            ydistances2[(y1 << 9) | y2] = ydistances2[(y2 << 9) | y1] = yd2;
         }
     }
     for (int x1 = 0; x1 < lineLength - 2; ++x1)
@@ -89,10 +80,19 @@ int main(int argc, char** argv)
         {
             xd1 += widths1[x2];
             xd2 += widths2[x2];
-            xdistances1[(x1 << 9) | (x2)] = xdistances1[((x2) << 9) | x1] = xd1;
-            xdistances2[(x1 << 9) | (x2)] = xdistances2[((x2) << 9) | x1] = xd2;
+            xdistances1[(x1 << 9) | x2] = xdistances1[(x2 << 9) | x1] = xd1;
+            xdistances2[(x1 << 9) | x2] = xdistances2[(x2 << 9) | x1] = xd2;
         }
     }
+
+    DSTOPWATCH_END(init);
+
+    //
+    // Part 1 + 2
+    //
+
+    DSTOPWATCH_START(logic);
+    int64_t sum1 = 0, sum2 = 0;
 
     for (int i = 0; i < galaxyCount - 1; ++i)
     {
