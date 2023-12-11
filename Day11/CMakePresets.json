@@ -1,0 +1,24 @@
+{
+    "version": 3,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 21,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "makefiles",
+            "binaryDir": "${sourceDir}/build",
+            "displayName": "Makefiles",
+            "description": "Makefiles!",
+            "generator": "Unix Makefiles"
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "makefiles",
+            "configurePreset": "makefiles",
+            "configuration": "Release"
+        }
+    ]
+}
