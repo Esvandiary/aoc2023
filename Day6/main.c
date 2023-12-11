@@ -54,7 +54,7 @@ int main(int argc, char** argv)
     num2 = 0;
     data += 10; // '\nDistance:'
     int raceIdx = 0;
-    while (*data != '\n')
+    while (data < end && *data != '\n')
     {
         ++data; // space
         while (!isdigit(*data))
