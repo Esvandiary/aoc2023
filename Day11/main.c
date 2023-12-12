@@ -86,19 +86,30 @@ int main(int argc, char** argv)
 
     for (int i = 0; i < galaxyCount - 1; ++i)
     {
+        const int y1 = dataY(galaxies[i]);
+        const int x1 = dataX(galaxies[i]);
+        const int16_t yd11 = ydistances1[y1];
+        const int32_t yd21 = ydistances2[y1];
+        const int16_t xd11 = xdistances1[x1];
+        const int32_t xd21 = xdistances2[x1];
         for (int j = i + 1; j < galaxyCount; ++j)
         {
-            const int y1 = dataY(galaxies[i]), y2 = dataY(galaxies[j]);
+            const int y2 = dataY(galaxies[j]);
             if (y1 != y2)
             {
-                sum1 += abs(ydistances1[y2] - ydistances1[y1]);
-                sum2 += abs(ydistances2[y2] - ydistances2[y1]);
+                sum1 += ydistances1[y2] - yd11;
+                sum2 += ydistances2[y2] - yd21;
             }
-            const int x1 = dataX(galaxies[i]), x2 = dataX(galaxies[j]);
-            if (x1 != x2)
+            const int x2 = dataX(galaxies[j]);
+            if (x1 < x2)
             {
-                sum1 += abs(xdistances1[x2] - xdistances1[x1]);
-                sum2 += abs(xdistances2[x2] - xdistances2[x1]);
+                sum1 += xdistances1[x2] - xd11;
+                sum2 += xdistances2[x2] - xd21;
+            }
+            else if (x1 > x2)
+            {
+                sum1 += xd11 - xdistances1[x2];
+                sum2 += xd21 - xdistances2[x2];
             }
         }
     }
