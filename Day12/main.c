@@ -17,7 +17,7 @@
 #define dataY(idx) ((idx) / lineLength)
 #define dataX(idx) ((idx) % lineLength)
 
-#define ENTRYKEYSZ (offsetof(entry, result))
+#define ENTRYKEYSZ (sizeof(entry))
 #define NEXTNUM(e) ((e).nums[sizeof((e).nums) - (e).numsCount])
 typedef struct entry
 {
@@ -27,17 +27,22 @@ typedef struct entry
     uint8_t nums[62];
     uint8_t numsCount;
     uint8_t curlen;
-    uint64_t result;
-    UT_hash_handle hh;
 } entry;
 
-static uint64_t getcount(vuctor* cachestore, entry** cache, entry curentry)
+typedef struct hentry
 {
-    entry* foundentry = NULL;
-    HASH_FIND(hh, *cache, &curentry, offsetof(entry, result), foundentry);
+    entry entry;
+    uint64_t result;
+    UT_hash_handle hh;
+} hentry;
+
+static uint64_t getcount(vuctor* cachestore, hentry** cache, entry curentry)
+{
+    hentry* foundentry = NULL;
+    HASH_FIND(hh, *cache, &curentry, ENTRYKEYSZ, foundentry);
     if (foundentry != NULL)
     {
-        DEBUGLOG("using cached value at length %u, result %lu\n", foundentry->length, foundentry->result);
+        DEBUGLOG("using cached value at length %u, result %lu\n", foundentry->entry.length, foundentry->result);
         return foundentry->result;
     }
 
@@ -64,18 +69,18 @@ static uint64_t getcount(vuctor* cachestore, entry** cache, entry curentry)
             nxtentry.unknown -= 1;
             // DEBUGLOG("branching ? -> . at %zu, curlen %d, numsDone %d\n", cs - cstart, curlen, numsDone);
             uint64_t resultDot = getcount(cachestore, cache, nxtentry);
-            entry* dotcache = VUCTOR_ADD_NOINIT(*cachestore, entry);
-            *dotcache = nxtentry;
+            hentry* dotcache = VUCTOR_ADD_NOINIT(*cachestore, hentry);
+            dotcache->entry = nxtentry;
             dotcache->result = resultDot;
-            HASH_ADD_KEYPTR(hh, *cache, dotcache, ENTRYKEYSZ, dotcache);
+            HASH_ADD_KEYPTR(hh, *cache, &dotcache->entry, ENTRYKEYSZ, dotcache);
 
             // DEBUGLOG("branching ? -> # at %zu, curlen %d, numsDone %d\n", cs - cstart, curlen, numsDone);
             nxtentry.broken |= 1;
             uint64_t resultHash = getcount(cachestore, cache, nxtentry);
-            entry* hashcache = VUCTOR_ADD_NOINIT(*cachestore, entry);
-            *hashcache = nxtentry;
+            hentry* hashcache = VUCTOR_ADD_NOINIT(*cachestore, hentry);
+            hashcache->entry = nxtentry;
             hashcache->result = resultHash;
-            HASH_ADD_KEYPTR(hh, *cache, hashcache, ENTRYKEYSZ, hashcache);
+            HASH_ADD_KEYPTR(hh, *cache, &hashcache->entry, ENTRYKEYSZ, hashcache);
 
             // DEBUGLOG("done branching on ? at %zu, result now %d\n", cs - cstart, result);
             DEBUGLOG("resultDot = %lu, resultHash = %lu\n", resultDot, resultHash);
@@ -137,9 +142,9 @@ int main(int argc, char** argv)
     uint64_t sum1 = 0, sum2 = 0;
 
     vuctor cachestore = VUCTOR_INIT;
-    VUCTOR_RESERVE(cachestore, entry, 4194304);
+    VUCTOR_RESERVE(cachestore, hentry, 4194304);
 
-    entry* cache = NULL;
+    hentry* cache = NULL;
 
     while (data < end)
     {
@@ -147,13 +152,13 @@ int main(int argc, char** argv)
         size_t numCount = 0;
 
         chartype* cstart = data;
-        entry* curentry = VUCTOR_ADD_NOINIT(cachestore, entry);
+        entry curentry = {0};
         while (*data != ' ')
         {
             const uint8_t hex30 = ((*data >> 4) & 1);
-            curentry->broken |= ((*data & ~hex30) & 1) << curentry->length;
-            curentry->unknown |= hex30 << curentry->length;
-            ++curentry->length;
+            curentry.broken |= ((*data & ~hex30) & 1) << curentry.length;
+            curentry.unknown |= hex30 << curentry.length;
+            ++curentry.length;
             ++data;
         }
 
@@ -169,44 +174,47 @@ int main(int argc, char** argv)
             }
             nums[numCount++] = num;
         } while (*data++ != '\n');
-        memcpy(curentry->nums + sizeof(curentry->nums) - numCount, nums, sizeof(uint8_t) * numCount);
-        curentry->numsCount = numCount;
+        memcpy(curentry.nums + sizeof(curentry.nums) - numCount, nums, sizeof(uint8_t) * numCount);
+        curentry.numsCount = numCount;
 
         DEBUGLOG("part 1\n");
 
-        uint64_t result = getcount(&cachestore, &cache, *curentry);
+        uint64_t result = getcount(&cachestore, &cache, curentry);
         sum1 += result;
 
-        entry* p2entry = VUCTOR_ADD_NOINIT(cachestore, entry);
-        *p2entry = *curentry;
+        entry p2entry = curentry;
 
-        curentry->result = result;
-        HASH_ADD_KEYPTR(hh, cache, curentry, ENTRYKEYSZ, curentry);
+        hentry* h1 = VUCTOR_ADD_NOINIT(cachestore, hentry);
+        h1->entry = curentry;
+        h1->result = result;
+        HASH_ADD_KEYPTR(hh, cache, &h1->entry, ENTRYKEYSZ, h1);
 
         DEBUGLOG("part 2\n");
 
         for (int i = 1; i < 5; ++i)
         {
-            p2entry->broken = (p2entry->broken << 1);
-            p2entry->broken = (p2entry->broken << curentry->length) | curentry->broken;
-            p2entry->unknown = (p2entry->unknown << 1) | 1;
-            p2entry->unknown = (p2entry->unknown << curentry->length) | curentry->unknown;
+            p2entry.broken = (p2entry.broken << 1);
+            p2entry.broken = (p2entry.broken << curentry.length) | curentry.broken;
+            p2entry.unknown = (p2entry.unknown << 1) | 1;
+            p2entry.unknown = (p2entry.unknown << curentry.length) | curentry.unknown;
         }
-        p2entry->length = (curentry->length * 5) + 4;
+        p2entry.length = (curentry.length * 5) + 4;
 
         for (int i = 1; i < 5; ++i)
         {
-            memcpy(p2entry->nums + sizeof(curentry->nums) - (numCount*(i+1)), &(NEXTNUM(*curentry)), sizeof(uint8_t) * numCount);
+            memcpy(p2entry.nums + sizeof(curentry.nums) - (numCount*(i+1)), &(NEXTNUM(curentry)), sizeof(uint8_t) * numCount);
         }
-        p2entry->numsCount *= 5;
+        p2entry.numsCount *= 5;
 
-        uint64_t p2result = getcount(&cachestore, &cache, *p2entry);
+        uint64_t p2result = getcount(&cachestore, &cache, p2entry);
         sum2 += p2result;
 
-        p2entry->result = p2result;
-        HASH_ADD_KEYPTR(hh, cache, p2entry, ENTRYKEYSZ, p2entry);
+        hentry* h2 = VUCTOR_ADD_NOINIT(cachestore, hentry);
+        h2->entry = p2entry;
+        h2->result = p2result;
+        HASH_ADD_KEYPTR(hh, cache, &h2->entry, ENTRYKEYSZ, h2);
 
-        DEBUGLOG("done line, sum2 now %ld; length %u\n", sum2, curentry->length);
+        DEBUGLOG("done line, sum2 now %ld; length %u\n", sum2, curentry.length);
     }
 
     DEBUGLOG("vuctor size: %zu\n", cachestore.size);
