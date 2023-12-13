@@ -73,9 +73,9 @@ static inline FORCEINLINE fresult follow(const chartype* const start, const char
         grid[data - start] = (gridentry) { .idx = gridchar, .dirchange = offsets[entryDir][c].dirchange };
         data += offsets[entryDir][c].offset;
         ++count;
+        entryDir = offsets[entryDir][c].newdir;
         if (data == s)
             break;
-        entryDir = offsets[entryDir][c].newdir;
     }
     DEBUGLOG("got to S after %d steps with entry dir %s\n", count, edNames[entryDir]);
     grid[s - start] = (gridentry) { .idx = gridchar, .dirchange = DC_NONE };
