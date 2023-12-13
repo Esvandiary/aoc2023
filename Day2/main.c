@@ -36,10 +36,10 @@ int main(int argc, char** argv)
         results[CR_G].Count = 0;
         results[CR_B].Count = 0;
 
-        while (*data != ':')
+        while (data < end && *data != ':')
             ++data;
 
-        while (*data != '\n')
+        while (data < end && *data != '\n')
         {
             data += 2;
             // number
