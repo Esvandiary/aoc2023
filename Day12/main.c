@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
+#include <sys/sysinfo.h>
 // #define ENABLE_DEBUGLOG
 // #define ENABLE_DSTOPWATCH
 #include "../common/mmap.h"
@@ -129,29 +131,35 @@ static uint64_t getcount(vuctor* cachestore, hentry** cache, entry curentry)
     return (curentry.numsCount == 0) ? 1 : 0;
 }
 
-int main(int argc, char** argv)
+typedef struct segment
 {
-    DSTOPWATCH_START(logic);
+    const chartype* start;
+    const chartype* end;
+    pthread_t thread;
+    uint64_t sum1;
+    uint64_t sum2;
+} segment;
 
-    mmap_file file = mmap_file_open_ro("input.txt");
-    const int fileSize = (int)(file.size);
+static segment segments[64] = {0};
 
-    chartype* data = file.data;
-    const chartype* const end = file.data + fileSize;
-
-    uint64_t sum1 = 0, sum2 = 0;
+static void* run_thread(void* vseg)
+{
+    segment* seg = (segment*)vseg;
+    const chartype* data = seg->start;
+    const chartype* const end = seg->end;
 
     vuctor cachestore = VUCTOR_INIT;
-    VUCTOR_RESERVE(cachestore, hentry, 4194304);
+    VUCTOR_RESERVE(cachestore, hentry, 2097152);
 
     hentry* cache = NULL;
+
+    uint64_t sum1 = 0, sum2 = 0;
 
     while (data < end)
     {
         uint8_t nums[16];
         size_t numCount = 0;
 
-        chartype* cstart = data;
         entry curentry = {0};
         while (*data != ' ')
         {
@@ -162,7 +170,6 @@ int main(int argc, char** argv)
             ++data;
         }
 
-        const chartype* cend = data - 1;
         ++data;
         do
         {
@@ -217,9 +224,51 @@ int main(int argc, char** argv)
         DEBUGLOG("done line, sum2 now %ld; length %u\n", sum2, curentry.length);
     }
 
-    DEBUGLOG("vuctor size: %zu\n", cachestore.size);
+    seg->sum1 = sum1;
+    seg->sum2 = sum2;
+    return NULL;
+}
+
+int main(int argc, char** argv)
+{
+    DSTOPWATCH_START(logic);
+
+    mmap_file file = mmap_file_open_ro("input.txt");
+    const int fileSize = (int)(file.size);
+
+    chartype* data = file.data;
+    const chartype* const end = file.data + fileSize;
+
+    uint64_t sum1 = 0, sum2 = 0;
+
+    int numSegments = get_nprocs();
+    for (int i = 0; i + 1 < numSegments; ++i)
+    {
+        segments[i].start = data;
+        data += fileSize / numSegments;
+        while (*(data - 1) != '\n')
+            --data;
+        segments[i].end = data;
+    }
+    segments[numSegments - 1].start = data;
+    segments[numSegments - 1].end = end;
+
+    for (int i = 0; i < numSegments; ++i)
+    {
+        pthread_create(&segments[i].thread, NULL, run_thread, segments + i);
+    }
+    for (int i = 0; i < numSegments; ++i)
+    {
+        pthread_join(segments[i].thread, NULL);
+    }
 
     DSTOPWATCH_END(logic);
+
+    for (int i = 0; i < numSegments; ++i)
+    {
+        sum1 += segments[i].sum1;
+        sum2 += segments[i].sum2;
+    }
 
     print_int64(sum1);
     print_int64(sum2);
