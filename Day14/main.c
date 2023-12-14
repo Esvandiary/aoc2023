@@ -222,11 +222,20 @@ static inline void letsRotateTheBoard(chartype* const data, int lineLength, int 
     }
 }
 
-static chartype boardCache[256*256];
-
-#define INIT_COUNT 1000
-#define TEST_COUNT 100
+#define MIN_PATTERN_LEN 3
+#define INIT_COUNT 100
+#define TEST_COUNT 1000
 #define END_ITER   1000000000
+
+static inline FORCEINLINE int getpatternlen(int* loads, int lastidx)
+{
+    for (int i = MIN_PATTERN_LEN; i < lastidx/3; ++i)
+    {
+        if (memcmp(loads + (lastidx - i), loads + (lastidx - i*2), sizeof(int) * i) == 0 && memcmp(loads + (lastidx - i), loads + (lastidx - i*3), sizeof(int)*i) == 0)
+            return i;
+    }
+    return -1;
+}
 
 int main(int argc, char** argv)
 {
@@ -258,35 +267,29 @@ int main(int argc, char** argv)
     DSTOPWATCH_START(part2);
 
     // always run some iters to let things settle
+    int loads[TEST_COUNT];
     int iter;
     for (iter = 0; iter < INIT_COUNT; ++iter)
     {
         letsRotateTheBoard(file.data, lineLength, lineCount);
+        loads[iter % TEST_COUNT] = calculateNorthLoad(file.data, lineLength, lineCount);
     }
 
     // run some iters to find a pattern
-    int loads[TEST_COUNT];
-    for (; iter < INIT_COUNT + TEST_COUNT; ++iter)
+    int patternLen = -1;
+    for (; iter < END_ITER; ++iter)
     {
         letsRotateTheBoard(file.data, lineLength, lineCount);
-        loads[iter - INIT_COUNT] = calculateNorthLoad(file.data, lineLength, lineCount);
-    }
+        loads[iter % TEST_COUNT] = calculateNorthLoad(file.data, lineLength, lineCount);
 
-    int patternLen = -1;
-    for (int i = 1; i < TEST_COUNT/2; ++i)
-    {
-        for (int j = 0; j < TEST_COUNT/i; ++j)
-        {
-            if (memcmp(loads + i*j, loads, sizeof(int) * i) != 0)
-                goto nextiter;
-        }
-        patternLen = i;
-        break;
-    nextiter:
+        patternLen = getpatternlen(loads, iter % TEST_COUNT);
+        if (patternLen >= 0)
+            break;
+
     }
 
     DEBUGLOG("pattern length = %d\n", patternLen);
-    for (; ((END_ITER - iter) % patternLen) != 0; ++iter)
+    for (; ((END_ITER - (iter + 1)) % patternLen) != 0; ++iter)
     {
         letsRotateTheBoard(file.data, lineLength, lineCount);
     }
