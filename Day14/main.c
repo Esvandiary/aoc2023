@@ -224,8 +224,8 @@ static inline void letsRotateTheBoard(chartype* const data, int lineLength, int 
 
 static chartype boardCache[256*256];
 
-#define INIT_COUNT 100
-#define TEST_COUNT 100
+#define INIT_COUNT 1000
+#define TEST_COUNT 1000
 #define END_ITER   1000000000
 
 int main(int argc, char** argv)
