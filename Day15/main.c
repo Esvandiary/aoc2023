@@ -27,9 +27,6 @@ typedef struct hentry
 } hentry;
 _Static_assert(sizeof(hentry) == sizeof(uint64_t));
 
-static hentry hashmap[256][256] = {0};
-static uint8_t maplen[256] = {0};
-
 #define HASH(current, value) (((current) + (value)) * 17)
 #define LBLEQ(x, y) ((x).label == (y).label)
 
@@ -42,6 +39,9 @@ int main(int argc, char** argv)
 
     register const chartype* data = file.data;
     const chartype* const end = file.data + fileSize;
+
+    hentry hashmap[256][64];
+    uint8_t maplen[256] = {0};
 
     register uint64_t sum1 = 0, sum2 = 0;
 
