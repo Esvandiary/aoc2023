@@ -15,16 +15,25 @@
 
 typedef struct entry
 {
-    uint16_t lbloff;
-    uint8_t lbllen;
     uint8_t focalLength;
+    chartype label[7];
 } entry;
+typedef struct hentry
+{
+    union
+    {
+        entry entry;
+        uint64_t u64;
+    };
+} hentry;
+_Static_assert(sizeof(entry) == sizeof(uint64_t));
+_Static_assert(sizeof(hentry) == sizeof(uint64_t));
 
-static entry hashmap[256][256] = {0};
+static hentry hashmap[256][256] = {0};
 static uint8_t maplen[256] = {0};
 
 #define HASH(current, value) (((current) + (value)) * 17)
-#define MAPEXISTS(hash, idx) (hashmap[hash][idx].focalLength != 0)
+#define LBLEQ(x, y) (((x).u64 ^ (y).u64) <= 0xFF)
 
 int main(int argc, char** argv)
 {
@@ -38,57 +47,70 @@ int main(int argc, char** argv)
 
     uint64_t sum1 = 0, sum2 = 0;
 
-    for (int idx = 0; idx < fileSize; ++idx)
+    while (data < end)
     {
-        DEBUGLOG("idx = %u\n", idx);
         uint8_t current1 = 0;
-        entry e;
-        e.lbloff = idx;
-        while (data[idx] != '=' && data[idx] != '-')
-            current1 = HASH(current1, data[idx++]);
-        e.lbllen = idx - e.lbloff;
-        uint8_t current2 = current1; // letters only
-        current1 = HASH(current1, data[idx++]);
-        if (data[idx] != ',' && data[idx] != '\n')
+        hentry e = { .u64 = 0 };
+        chartype* lbl = e.entry.label;
+        while (*data & 0x40)
         {
-            e.focalLength = data[idx] & 0xF;
-            for (size_t i = 0; i < maplen[current2]; ++i)
+            current1 = HASH(current1, *data);
+            *lbl++ = *data++;
+        }
+        uint8_t current2 = current1; // letters only
+        current1 = HASH(current1, *data++);
+        if (*data & 0x10)
+        {
+            e.entry.focalLength = *data & 0xF;
+            hentry* entry = hashmap[current2];
+            hentry* entryEnd = hashmap[current2] + maplen[current2];
+            while (entry < entryEnd)
             {
-                if (MAPEXISTS(current2, i) && memcmp(&data[hashmap[current2][i].lbloff], &data[e.lbloff], e.lbllen) == 0)
+                if (LBLEQ(*entry, e))
                 {
-                    hashmap[current2][i].focalLength = e.focalLength;
+                    entry->entry.focalLength = e.entry.focalLength;
                     goto foundexisting;
                 }
+                ++entry;
             }
-            hashmap[current2][maplen[current2]++] = e;
+            *entryEnd = e;
+            ++maplen[current2];
         foundexisting:
-            current1 = HASH(current1, data[idx]);
-            ++idx;
+            current1 = HASH(current1, *data++);
         }
         else
         {
             // YEET IT
-            for (uint8_t i = 0; i < maplen[current2]; ++i)
+            hentry* entry = hashmap[current2];
+            hentry* entryEnd = hashmap[current2] + maplen[current2];
+            while (entry < entryEnd)
             {
-                if (MAPEXISTS(current2, i) && memcmp(&data[hashmap[current2][i].lbloff], &data[e.lbloff], e.lbllen) == 0)
+                if (LBLEQ(*entry, e))
                 {
-                    memset(&hashmap[current2][i], 0, sizeof(entry));
+                    entry->u64 = 0;
                 }
+                ++entry;
             }
         }
         sum1 += current1;
+        ++data;
     }
 
     print_uint64(sum1);
 
     for (size_t i = 0; i < 256; ++i)
     {
+        hentry* entry = hashmap[i];
+        hentry* entryEnd = hashmap[i] + maplen[i];
         int slot = 1;
-        for (size_t j = 0; j < maplen[i]; ++j)
+        uint64_t isum2 = 0;
+        while (entry < entryEnd)
         {
-            if (MAPEXISTS(i, j))
-                sum2 += (i+1) * (slot++) * hashmap[i][j].focalLength;
+            if (entry->u64)
+                isum2 += (slot++) * entry->entry.focalLength;
+            ++entry;
         }
+        sum2 += (isum2 * (i + 1));
     }
 
     print_uint64(sum2);
