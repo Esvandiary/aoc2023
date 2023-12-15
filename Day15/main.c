@@ -19,8 +19,8 @@ typedef struct hentry
     {
         struct
         {
+            uint32_t label;
             uint8_t focalLength;
-            chartype label[7];
         };
         uint64_t u64;
     };
@@ -31,7 +31,7 @@ static hentry hashmap[256][256] = {0};
 static uint8_t maplen[256] = {0};
 
 #define HASH(current, value) (((current) + (value)) * 17)
-#define LBLEQ(x, y) (((x).u64 ^ (y).u64) <= 0xFF)
+#define LBLEQ(x, y) ((x).label == (y).label)
 
 int main(int argc, char** argv)
 {
@@ -48,12 +48,12 @@ int main(int argc, char** argv)
     while (data < end)
     {
         uint8_t current1 = 0;
-        hentry e = { .u64 = 0 };
-        chartype* lbl = e.label;
+        register hentry e = { .label = 0 };
         while (*data & 0x40)
         {
             current1 = HASH(current1, *data);
-            *lbl++ = *data++;
+            e.label = (e.label << 5) | (*data & 0x1F);
+            ++data;
         }
         const uint8_t current2 = current1; // letters only
         current1 = HASH(current1, *data++);
