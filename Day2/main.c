@@ -22,19 +22,12 @@ int main(int argc, char** argv)
 
     int sum1 = 0, sum2 = 0;
 
-    ColourResult results[32];
-    results[CR_R].Skip = 3;
-    results[CR_G].Skip = 5;
-    results[CR_B].Skip = 4;
-
     const chartype* data = file.data;
     const chartype* const end = file.data + fileSize;
     int lineNum = 1;
     while (data < end)
     {
-        results[CR_R].Count = 0;
-        results[CR_G].Count = 0;
-        results[CR_B].Count = 0;
+        int redCount = 0, greenCount = 0, blueCount = 0;
 
         while (data < end && *data != ':')
             ++data;
@@ -51,15 +44,30 @@ int main(int argc, char** argv)
             }
             ++data; // ' '
             // colour
-            const uint8_t ridx = *data & 0x1F;
-            results[ridx].Count = MAX(results[ridx].Count, num);
-            data += results[ridx].Skip;
+            switch (*data)
+            {
+                case 'r':
+                    redCount = MAX(redCount, num);
+                    data += 3;
+                    break;
+                case 'g':
+                    greenCount = MAX(greenCount, num);
+                    data += 5;
+                    break;
+                case 'b':
+                    blueCount = MAX(blueCount, num);
+                    data += 4;
+                    break;
+                default:
+                    __builtin_unreachable();
+                    break;
+            }
         }
 
-        const int mask = ((results[CR_R].Count - 13) & (results[CR_G].Count - 14) & (results[CR_B].Count - 15)) >> 31;
+        const int mask = ((redCount - 13) & (greenCount - 14) & (blueCount - 15)) >> 31;
         sum1 += lineNum & mask;
 
-        sum2 += results[CR_R].Count * results[CR_G].Count * results[CR_B].Count;
+        sum2 += redCount * greenCount * blueCount;
 
         ++data; // '\n'
         ++lineNum;
