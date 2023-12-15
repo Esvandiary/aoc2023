@@ -35,7 +35,7 @@ static uint8_t maplen[256] = {0};
 
 int main(int argc, char** argv)
 {
-    DSTOPWATCH_START(logic);
+    DSTOPWATCH_START(part1);
 
     mmap_file file = mmap_file_open_ro("input.txt");
     const int fileSize = (int)(file.size);
@@ -55,22 +55,22 @@ int main(int argc, char** argv)
             current1 = HASH(current1, *data);
             *lbl++ = *data++;
         }
-        uint8_t current2 = current1; // letters only
+        const uint8_t current2 = current1; // letters only
         current1 = HASH(current1, *data++);
+        hentry* entry = hashmap[current2];
+        hentry* const entryEnd = entry + maplen[current2];
         if (*data & 0x10)
         {
-            e.focalLength = *data & 0xF;
-            hentry* entry = hashmap[current2];
-            hentry* const entryEnd = entry + maplen[current2];
             while (entry < entryEnd)
             {
                 if (LBLEQ(*entry, e))
                 {
-                    entry->focalLength = e.focalLength;
+                    entry->focalLength = *data & 0xF;
                     goto foundexisting;
                 }
                 ++entry;
             }
+            e.focalLength = *data & 0xF;
             *entryEnd = e;
             ++maplen[current2];
         foundexisting:
@@ -79,8 +79,6 @@ int main(int argc, char** argv)
         else
         {
             // YEET IT
-            hentry* entry = hashmap[current2];
-            const hentry* const entryEnd = entry + maplen[current2];
             while (entry < entryEnd)
             {
                 if (LBLEQ(*entry, e))
@@ -96,6 +94,8 @@ int main(int argc, char** argv)
     }
 
     print_uint64(sum1);
+    DSTOPWATCH_END(part1);
+    DSTOPWATCH_START(part2);
 
     for (size_t i = 0; i < 256; ++i)
     {
@@ -113,9 +113,10 @@ int main(int argc, char** argv)
     }
 
     print_uint64(sum2);
-    DSTOPWATCH_END(logic);
+    DSTOPWATCH_END(part2);
 
-    DSTOPWATCH_PRINT(logic);
+    DSTOPWATCH_PRINT(part1);
+    DSTOPWATCH_PRINT(part2);
 
     return 0;
 }
