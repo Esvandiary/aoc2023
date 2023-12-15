@@ -13,20 +13,18 @@
 
 #define isdigit(c) ((c) >= '0' && (c) <= '9')
 
-typedef struct entry
-{
-    uint8_t focalLength;
-    chartype label[7];
-} entry;
 typedef struct hentry
 {
     union
     {
-        entry entry;
+        struct
+        {
+            uint8_t focalLength;
+            chartype label[7];
+        };
         uint64_t u64;
     };
 } hentry;
-_Static_assert(sizeof(entry) == sizeof(uint64_t));
 _Static_assert(sizeof(hentry) == sizeof(uint64_t));
 
 static hentry hashmap[256][256] = {0};
@@ -51,7 +49,7 @@ int main(int argc, char** argv)
     {
         uint8_t current1 = 0;
         hentry e = { .u64 = 0 };
-        chartype* lbl = e.entry.label;
+        chartype* lbl = e.label;
         while (*data & 0x40)
         {
             current1 = HASH(current1, *data);
@@ -61,14 +59,14 @@ int main(int argc, char** argv)
         current1 = HASH(current1, *data++);
         if (*data & 0x10)
         {
-            e.entry.focalLength = *data & 0xF;
+            e.focalLength = *data & 0xF;
             hentry* entry = hashmap[current2];
-            hentry* entryEnd = hashmap[current2] + maplen[current2];
+            hentry* const entryEnd = entry + maplen[current2];
             while (entry < entryEnd)
             {
                 if (LBLEQ(*entry, e))
                 {
-                    entry->entry.focalLength = e.entry.focalLength;
+                    entry->focalLength = e.focalLength;
                     goto foundexisting;
                 }
                 ++entry;
@@ -82,12 +80,13 @@ int main(int argc, char** argv)
         {
             // YEET IT
             hentry* entry = hashmap[current2];
-            hentry* entryEnd = hashmap[current2] + maplen[current2];
+            const hentry* const entryEnd = entry + maplen[current2];
             while (entry < entryEnd)
             {
                 if (LBLEQ(*entry, e))
                 {
                     entry->u64 = 0;
+                    break;
                 }
                 ++entry;
             }
@@ -101,13 +100,13 @@ int main(int argc, char** argv)
     for (size_t i = 0; i < 256; ++i)
     {
         hentry* entry = hashmap[i];
-        hentry* entryEnd = hashmap[i] + maplen[i];
-        int slot = 1;
+        const hentry* const entryEnd = entry + maplen[i];
+        int slot = 0;
         uint64_t isum2 = 0;
         while (entry < entryEnd)
         {
             if (entry->u64)
-                isum2 += (slot++) * entry->entry.focalLength;
+                isum2 += (++slot) * entry->focalLength;
             ++entry;
         }
         sum2 += (isum2 * (i + 1));
