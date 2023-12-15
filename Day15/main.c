@@ -20,7 +20,7 @@ typedef struct hentry
         struct
         {
             uint32_t label;
-            uint8_t focalLength;
+            uint32_t focalLength;
         };
         uint64_t u64;
     };
@@ -40,10 +40,10 @@ int main(int argc, char** argv)
     mmap_file file = mmap_file_open_ro("input.txt");
     const int fileSize = (int)(file.size);
 
-    const chartype* data = file.data;
+    register const chartype* data = file.data;
     const chartype* const end = file.data + fileSize;
 
-    uint64_t sum1 = 0, sum2 = 0;
+    register uint64_t sum1 = 0, sum2 = 0;
 
     while (data < end)
     {
@@ -57,7 +57,7 @@ int main(int argc, char** argv)
         }
         const uint8_t current2 = current1; // letters only
         current1 = HASH(current1, *data++);
-        hentry* entry = hashmap[current2];
+        register hentry* entry = hashmap[current2];
         hentry* const entryEnd = entry + maplen[current2];
         if (*data & 0x10)
         {
@@ -99,7 +99,7 @@ int main(int argc, char** argv)
 
     for (size_t i = 0; i < 256; ++i)
     {
-        hentry* entry = hashmap[i];
+        register hentry* entry = hashmap[i];
         const hentry* const entryEnd = entry + maplen[i];
         int slot = 0;
         uint64_t isum2 = 0;
