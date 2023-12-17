@@ -16,7 +16,13 @@
 #define dataY(idx) ((idx) / lineLength)
 #define dataX(idx) ((idx) % lineLength)
 
-static int32_t galaxies[1024];
+typedef struct pos
+{
+    uint16_t y;
+    uint16_t x;
+} pos;
+
+static pos galaxies[1024];
 static uint8_t widths1[512] = { [0 ... 511] = 2 };
 static uint8_t heights1[512] = { [0 ... 511] = 2 };
 static uint32_t widths2[512] = { [0 ... 511] = 1000000 };
@@ -49,10 +55,12 @@ int main(int argc, char** argv)
         if (c == '#')
         {
             const uint32_t idx = data - file.data;
-            DEBUGLOG("galaxy at %d,%d (%u)\n", dataY(idx), dataX(idx), idx);
-            heights1[dataY(idx)] = heights2[dataY(idx)] = 1;
-            widths1[dataX(idx)] = widths2[dataX(idx)] = 1;
-            galaxies[galaxyCount++] = idx;
+            const uint16_t y = dataY(idx);
+            const uint16_t x = dataX(idx);
+            DEBUGLOG("galaxy at %d,%d (%u)\n", y, x, idx);
+            heights1[y] = heights2[y] = 1;
+            widths1[x] = widths2[x] = 1;
+            galaxies[galaxyCount++] = (pos) { .y = y, .x = x };
         }
         ++data;
     }
@@ -86,21 +94,21 @@ int main(int argc, char** argv)
 
     for (int i = 0; i < galaxyCount - 1; ++i)
     {
-        const int y1 = dataY(galaxies[i]);
-        const int x1 = dataX(galaxies[i]);
+        const int y1 = galaxies[i].y;
+        const int x1 = galaxies[i].x;
         const int16_t yd11 = ydistances1[y1];
         const int32_t yd21 = ydistances2[y1];
         const int16_t xd11 = xdistances1[x1];
         const int32_t xd21 = xdistances2[x1];
         for (int j = i + 1; j < galaxyCount; ++j)
         {
-            const int y2 = dataY(galaxies[j]);
+            const int y2 = galaxies[j].y;
             if (y1 != y2)
             {
                 sum1 += ydistances1[y2] - yd11;
                 sum2 += ydistances2[y2] - yd21;
             }
-            const int x2 = dataX(galaxies[j]);
+            const int x2 = galaxies[j].x;
             if (x1 < x2)
             {
                 sum1 += xdistances1[x2] - xd11;
