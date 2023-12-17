@@ -20,16 +20,16 @@
 #define dataX(idx) ((idx) % lineLength)
 
 #define NUMCOUNT 37
-#define ENTRYKEYSZ (offsetof(entry, nums) + sizeof(uint8_t)*NUMCOUNT)
+#define ENTRYKEYSZ (offsetof(entry, curlen) + sizeof(uint8_t))
 #define NEXTNUM(e) ((e).nums[sizeof((e).nums) - (e).numsCount])
 typedef struct entry
 {
     __uint128_t broken;
     __uint128_t unknown;
     uint8_t length;
+    uint8_t nums[NUMCOUNT];
     uint8_t numsCount;
     uint8_t curlen;
-    uint8_t nums[NUMCOUNT];
 } entry;
 
 typedef struct hentry
