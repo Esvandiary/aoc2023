@@ -26,7 +26,7 @@ typedef struct entry
     __uint128_t broken;
     __uint128_t unknown;
     uint32_t length;
-    uint8_t nums[62];
+    uint8_t nums[42];
     uint8_t numsCount;
     uint8_t curlen;
 } entry;
