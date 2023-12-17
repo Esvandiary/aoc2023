@@ -19,9 +19,9 @@
 #define dataY(idx) ((idx) / lineLength)
 #define dataX(idx) ((idx) % lineLength)
 
-#define ENTRYKEYSZ (sizeof(entry))
+#define NUMCOUNT 37
+#define ENTRYKEYSZ (offsetof(entry, nums) + sizeof(uint8_t)*NUMCOUNT)
 #define NEXTNUM(e) ((e).nums[sizeof((e).nums) - (e).numsCount])
-#pragma pack(push, 8)
 typedef struct entry
 {
     __uint128_t broken;
@@ -29,16 +29,14 @@ typedef struct entry
     uint8_t length;
     uint8_t numsCount;
     uint8_t curlen;
-    uint8_t nums[37];
+    uint8_t nums[NUMCOUNT];
 } entry;
-#pragma pop
 
 typedef struct hentry
 {
     entry entry;
     uint64_t result;
     UT_hash_handle hh;
-    uint64_t _padding0;
 } hentry;
 
 static uint64_t getcount(vuctor* cachestore, hentry** cache, entry curentry)
