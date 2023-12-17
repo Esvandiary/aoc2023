@@ -21,6 +21,7 @@
 
 #define ENTRYKEYSZ (sizeof(entry))
 #define NEXTNUM(e) ((e).nums[sizeof((e).nums) - (e).numsCount])
+#pragma pack(push, 8)
 typedef struct entry
 {
     __uint128_t broken;
@@ -30,12 +31,14 @@ typedef struct entry
     uint8_t curlen;
     uint8_t nums[37];
 } entry;
+#pragma pop
 
 typedef struct hentry
 {
     entry entry;
     uint64_t result;
     UT_hash_handle hh;
+    uint64_t _padding0;
 } hentry;
 
 static uint64_t getcount(vuctor* cachestore, hentry** cache, entry curentry)
