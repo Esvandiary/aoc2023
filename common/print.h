@@ -25,7 +25,7 @@ static inline FORCEINLINE void print_uint64(uint64_t n)
 static inline FORCEINLINE void print_int64(int64_t n)
 {
     char buf[100];
-    char* p = _write_uint64_buf(n, buf, 100);
+    char* p = _write_uint64_buf((n >= 0 ? n : -n), buf, 100);
     if (n < 0) *--p = '-';
     puts(p);
 }
