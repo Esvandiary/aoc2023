@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#define ENABLE_DEBUGLOG
+// #define ENABLE_DEBUGLOG
 // #define ENABLE_DSTOPWATCH
 #include "astar.h"
 #include "../common/mmap.h"
@@ -25,7 +25,7 @@ int main(int argc, char** argv)
 {
     DSTOPWATCH_START(part1);
 
-    mmap_file file = mmap_file_open_ro("../example1.txt");
+    mmap_file file = mmap_file_open_ro("input.txt");
     const int fileSize = (int)(file.size);
 
     register const chartype* data = file.data;
@@ -52,7 +52,7 @@ int main(int argc, char** argv)
         {
             for (int dir = 0; dir < 4; ++dir)
             {
-                nodes[nodeindex(lineCount, lineLength, y, x, dir)] = (astar_node){
+                nodes[nodeindex(lineCount, lineLength, y, x, dir)] = (astar_node) {
                     .pos = (astar_pos) {.y = y, .x = x },
                     .dir = dir,
                     .heatloss = d.data[dataindex(y, x)] & 0xF,
@@ -76,6 +76,20 @@ int main(int argc, char** argv)
     DSTOPWATCH_END(part1);
     DSTOPWATCH_START(part2);
 
+    for (int i = 0; i < lineLength * lineCount * 4; ++i)
+    {
+        nodes[i].traversed = false;
+        nodes[i].fScore = INT64_MAX;
+    }
+
+    sum2 = calculate(
+        nodes,
+        lineCount,
+        lineLength,
+        (astar_pos) { .y = 0, .x = 0 },
+        (astar_pos) { .y = lineCount - 1, .x = lineLength - 2 },
+        4,
+        10);
 
     print_int64(sum2);
     DSTOPWATCH_END(part2);
