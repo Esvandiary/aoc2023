@@ -91,7 +91,7 @@ static inline FORCEINLINE int get_start_ed(uint8_t c)
 
 int main(int argc, char** argv)
 {
-    DSTOPWATCH_START(part1);
+    DSTOPWATCH_START(logic);
 
     mmap_file file = mmap_file_open_ro("input.txt");
     const int fileSize = (int)(file.size);
@@ -99,8 +99,12 @@ int main(int argc, char** argv)
     register const chartype* data = file.data;
     const chartype* const end = file.data + fileSize;
 
-    line lines[2048];
-    size_t lineCount = 0;
+    int64_t sum1 = 0, sum2 = 0;
+
+    int64_t p1x = 0, p1y = 0, p1px = 0, p1py = 0;
+    int64_t p1i = 0, p1b = 0;
+    int64_t p2x = 0, p2y = 0, p2px = 0, p2py = 0;
+    int64_t p2i = 0, p2b = 0;
 
     while (data < end)
     {
@@ -121,100 +125,38 @@ int main(int argc, char** argv)
             value |= hexmap[*data++];
         }
         data += 2;
-        lines[lineCount++] = (line) { .dir = dir, .len = len, .value = value };
-    }
 
-    move offsets[4][4] = {0};
-    offsets[ED_RIGHT ][DIR_L] = (move) { .dx = -1, .dy =  0, .newdir = ED_RIGHT,  .dirchange = DC_NONE,  .middirchange = DC_NONE };
-    offsets[ED_LEFT  ][DIR_R] = (move) { .dx =  1, .dy =  0, .newdir = ED_LEFT,   .dirchange = DC_NONE,  .middirchange = DC_NONE };
-    offsets[ED_TOP   ][DIR_D] = (move) { .dx =  0, .dy =  1, .newdir = ED_TOP,    .dirchange = DC_SWAP,  .middirchange = DC_SWAP };
-    offsets[ED_BOTTOM][DIR_U] = (move) { .dx =  0, .dy = -1, .newdir = ED_BOTTOM, .dirchange = DC_SWAP,  .middirchange = DC_SWAP };
-    offsets[ED_LEFT  ][DIR_D] = (move) { .dx =  0, .dy =  1, .newdir = ED_TOP,    .dirchange = DC_RIGHT, .middirchange = DC_SWAP };
-    offsets[ED_BOTTOM][DIR_L] = (move) { .dx = -1, .dy =  0, .newdir = ED_RIGHT,  .dirchange = DC_LEFT,  .middirchange = DC_NONE };
-    offsets[ED_TOP   ][DIR_R] = (move) { .dx =  1, .dy =  0, .newdir = ED_LEFT,   .dirchange = DC_LEFT,  .middirchange = DC_NONE };
-    offsets[ED_RIGHT ][DIR_U] = (move) { .dx =  0, .dy = -1, .newdir = ED_BOTTOM, .dirchange = DC_RIGHT, .middirchange = DC_SWAP };
-    offsets[ED_LEFT  ][DIR_U] = (move) { .dx =  0, .dy = -1, .newdir = ED_BOTTOM, .dirchange = DC_LEFT,  .middirchange = DC_SWAP };
-    offsets[ED_TOP   ][DIR_L] = (move) { .dx = -1, .dy =  0, .newdir = ED_RIGHT,  .dirchange = DC_RIGHT, .middirchange = DC_NONE };
-    offsets[ED_BOTTOM][DIR_R] = (move) { .dx =  1, .dy =  0, .newdir = ED_LEFT,   .dirchange = DC_RIGHT, .middirchange = DC_NONE };
-    offsets[ED_RIGHT ][DIR_D] = (move) { .dx =  0, .dy =  1, .newdir = ED_TOP,    .dirchange = DC_LEFT,  .middirchange = DC_SWAP };
-
-    int64_t sum1 = 0, sum2 = 0;
-
-    gridentry grid[HOLESIZE*HOLESIZE] = {0};
-    int x = HOLESIZE/2, y = HOLESIZE/2;
-    int minX = HOLESIZE, maxX = 0, minY = HOLESIZE, maxY = 0;
-    int entryDir = get_start_ed(lines[0].dir);
-    grid[holeindex(y, x)] = (gridentry) { .depth = 1, .dirchange = -1 }; // fix dirchange at the end
-    for (size_t i = 0; i < lineCount; ++i)
-    {
-        move* off = &offsets[entryDir][lines[i].dir];
-        grid[holeindex(y,x)].dirchange = off->dirchange;
-        entryDir = off->newdir;
-        for (int j = 1; j <= lines[i].len; ++j)
+        switch (dir)
         {
-            x += off->dx;
-            y += off->dy;
-            grid[holeindex(y,x)].depth = 1;
-            grid[holeindex(y,x)].dirchange = off->middirchange;
+            case DIR_R: p1x += len; break;
+            case DIR_D: p1y += len; break;
+            case DIR_L: p1x -= len; break;
+            case DIR_U: p1y -= len; break;
         }
+        p1i += (p1px * p1y - p1x * p1py);
+        p1b += len;
+        p1px = p1x; p1py = p1y;
 
-        minX = MIN(minX, x);
-        maxX = MAX(maxX, x);
-        minY = MIN(minY, y);
-        maxY = MAX(maxY, y);
-    }
-    grid[holeindex(HOLESIZE/2,HOLESIZE/2)].dirchange = offsets[entryDir][lines[0].dir].dirchange;
-
-    uint8_t add = 0;
-    uint8_t entrydc = DC_NONE;
-    for (int hy = minY; hy <= maxY; ++hy)
-    {
-        for (int hx = minX; hx <= maxX; ++hx)
+        switch (value & 0xF)
         {
-            gridentry* g = grid + holeindex(hy,hx);
-            if (g->depth)
-            {
-                switch (g->dirchange)
-                {
-                    case DC_SWAP:
-                        add = ~add & 1;
-                        entrydc = DC_NONE;
-                        break;
-                    case DC_NONE:
-                        break;
-                    default:
-                        if (entrydc == DC_NONE)
-                        {
-                            entrydc = g->dirchange;
-                        }
-                        else if (entrydc != g->dirchange)
-                        {
-                            add = ~add & 1;
-                            entrydc = DC_NONE;
-                        }
-                        break;
-                }
-                ++sum1;
-            }
-            else
-            {
-                sum1 += add;
-                g->depth = add;
-            }
+            case DIR_R: p2x += (value >> 4); break;
+            case DIR_D: p2y += (value >> 4); break;
+            case DIR_L: p2x -= (value >> 4); break;
+            case DIR_U: p2y -= (value >> 4); break;
         }
+        p2i += (p2px * p2y - p2x * p2py);
+        p2b += (value >> 4);
+        p2px = p2x; p2py = p2y;
     }
+
+    sum1 = (p1i + p1b) / 2 + 1;
+    sum2 = (p2i + p2b) / 2 + 1;
 
     print_int64(sum1);
-    DSTOPWATCH_END(part1);
-    DSTOPWATCH_START(part2);
-
-
-
     print_int64(sum2);
-    DSTOPWATCH_END(part2);
+    DSTOPWATCH_END(logic);
 
-    DSTOPWATCH_PRINT(part1);
-    DSTOPWATCH_PRINT(part2);
+    DSTOPWATCH_PRINT(logic);
 
     return 0;
 }
