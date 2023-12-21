@@ -207,11 +207,24 @@ int main(int argc, char** argv)
     DEBUGLOG("rx input: %c%c\n", MICHARS(rxinput));
     p2state p2 = { .module = rxinput, .value = 0 };
     uint64_t p2period[16] = {0};
+    uint16_t p2icount = modules[rxinput].num_inputs;
 
     size_t iter;
     for (iter = 0; iter < 1000; ++iter)
     {
         run(modules, mstate, pulsecount, &p2);
+
+        if (p2.value)
+        {
+            const uint16_t idx = __builtin_ctz(p2.value);
+            if (!p2period[idx])
+            {
+                p2period[idx] = iter + 1;
+                if (--p2icount == 0)
+                    break;
+            }
+            p2.value = 0;
+        }
     }
     DEBUGLOG("lo: %lu, hi: %lu\n", pulsecount[0], pulsecount[1]);
     sum1 = pulsecount[0] * pulsecount[1];
@@ -220,7 +233,6 @@ int main(int argc, char** argv)
     DSTOPWATCH_END(part1);
     DSTOPWATCH_START(part2);
 
-    uint16_t p2icount = modules[rxinput].num_inputs;
     while (true)
     {
         run(modules, mstate, pulsecount, &p2);
