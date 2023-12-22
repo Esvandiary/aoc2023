@@ -5,15 +5,37 @@
 #include <string.h>
 // #define ENABLE_DEBUGLOG
 // #define ENABLE_DSTOPWATCH
-#include "minheap.h"
 #include "../common/mmap.h"
 #include "../common/print.h"
 #include "../common/stopwatch.h"
 
 #define isdigit(c) ((c) >= '0' && (c) <= '9')
-#define dataindex(d, y, x) ((y)*(d).lineLength + (x))
-#define dataY(d, idx) ((idx) / (d).lineLength)
-#define dataX(d, idx) ((idx) % (d).lineLength)
+
+typedef struct bpos
+{
+    uint16_t x;
+    uint16_t y;
+    uint16_t z;
+} bpos;
+
+typedef uint32_t brickid;
+
+typedef struct brick
+{
+    brickid id;
+    bpos startpos;
+    bpos endpos;
+    brickid supportedby[8];
+    uint16_t supportedbyCount;
+    brickid supporting[8];
+    uint16_t supportingCount;
+    uint16_t dependentsCount;
+} brick;
+
+#define MINHEAP_NAME brick
+#define MINHEAP_TYPE brick
+#define MINHEAP_SCORE(b) ((b)->startpos.z)
+#include "../common/minheap.h"
 
 typedef struct fdata
 {
@@ -99,7 +121,6 @@ int main(int argc, char** argv)
 
     DSTOPWATCH_START(part1);
 
-    bool grid[256][10][10] = { 0 };
     uint8_t maxz[10][10] = { 0 };
     uint32_t maxbricks[10][10] = { 0 };
 
