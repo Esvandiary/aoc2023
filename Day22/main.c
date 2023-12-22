@@ -124,8 +124,6 @@ int main(int argc, char** argv)
     uint8_t maxz[10][10] = { 0 };
     uint32_t maxbricks[10][10] = { 0 };
 
-    memset(grid[0], 1, sizeof(grid[0]));
-
     for (int z = 0; z < 512; ++z)
     {
         for (int bi = 0; bi < brickz[z].count; ++bi)
