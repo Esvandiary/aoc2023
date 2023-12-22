@@ -141,18 +141,20 @@ int main(int argc, char** argv)
 
     int runamt = d.lineLength * 4;
     int64_t fullsums[2][9];
-    for (int i = 0; i < 2; ++i)
-    {
-        fullsums[i][S_TOPLEFT ] = rungrid(&d, dataindex(d, 0, 0), runamt, i);
-        fullsums[i][S_TOP     ] = rungrid(&d, dataindex(d, 0, dataX(d, sidx)), runamt, 1);
-        fullsums[i][S_TOPRIGHT] = rungrid(&d, dataindex(d, 0, gridwidth - 1), runamt, i);
-        fullsums[i][S_LEFT    ] = rungrid(&d, dataindex(d, dataY(d, sidx), 0), runamt, 1);
-        fullsums[i][S_MIDDLE  ] = rungrid(&d, sidx, runamt, i);
-        fullsums[i][S_RIGHT   ] = rungrid(&d, dataindex(d, dataY(d, sidx), gridwidth - 1), runamt, 1);
-        fullsums[i][S_BTMLEFT ] = rungrid(&d, dataindex(d, d.lineCount - 1, 0), runamt, i);
-        fullsums[i][S_BOTTOM  ] = rungrid(&d, dataindex(d, d.lineCount - 1, dataX(d, sidx)), runamt, 1);
-        fullsums[i][S_BTMRIGHT] = rungrid(&d, dataindex(d, d.lineCount - 1, gridwidth - 1), runamt, i);
-    }
+    fullsums[0][S_TOPLEFT ] = rungrid(&d, dataindex(d, 0, 0), runamt, 0);
+    fullsums[0][S_TOPRIGHT] = rungrid(&d, dataindex(d, 0, gridwidth - 1), runamt, 0);
+    fullsums[0][S_MIDDLE  ] = 0;
+    fullsums[0][S_BTMLEFT ] = rungrid(&d, dataindex(d, d.lineCount - 1, 0), runamt, 0);
+    fullsums[0][S_BTMRIGHT] = rungrid(&d, dataindex(d, d.lineCount - 1, gridwidth - 1), runamt, 0);
+    fullsums[1][S_TOPLEFT ] = rungrid(&d, dataindex(d, 0, 0), runamt, 1);
+    fullsums[1][S_TOP     ] = fullsums[0][S_TOP     ] = rungrid(&d, dataindex(d, 0, dataX(d, sidx)), runamt, 1);
+    fullsums[1][S_TOPRIGHT] = rungrid(&d, dataindex(d, 0, gridwidth - 1), runamt, 1);
+    fullsums[1][S_LEFT    ] = fullsums[0][S_LEFT    ] = rungrid(&d, dataindex(d, dataY(d, sidx), 0), runamt, 1);
+    fullsums[1][S_MIDDLE  ] = rungrid(&d, sidx, runamt, 1);
+    fullsums[1][S_RIGHT   ] = fullsums[0][S_RIGHT   ] = rungrid(&d, dataindex(d, dataY(d, sidx), gridwidth - 1), runamt, 1);
+    fullsums[1][S_BTMLEFT ] = rungrid(&d, dataindex(d, d.lineCount - 1, 0), runamt, 1);
+    fullsums[1][S_BOTTOM  ] = fullsums[0][S_BOTTOM  ] = rungrid(&d, dataindex(d, d.lineCount - 1, dataX(d, sidx)), runamt, 1);
+    fullsums[1][S_BTMRIGHT] = rungrid(&d, dataindex(d, d.lineCount - 1, gridwidth - 1), runamt, 1);
 
     const int64_t p2steps = 26501365;
     const int64_t p2blocks = p2steps / gridwidth;
