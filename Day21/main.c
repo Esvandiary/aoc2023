@@ -144,13 +144,13 @@ int main(int argc, char** argv)
     for (int i = 0; i < 2; ++i)
     {
         fullsums[i][S_TOPLEFT ] = rungrid(&d, dataindex(d, 0, 0), runamt, i);
-        fullsums[i][S_TOP     ] = rungrid(&d, dataindex(d, 0, dataX(d, sidx)), runamt, i);
+        fullsums[i][S_TOP     ] = rungrid(&d, dataindex(d, 0, dataX(d, sidx)), runamt, 1);
         fullsums[i][S_TOPRIGHT] = rungrid(&d, dataindex(d, 0, gridwidth - 1), runamt, i);
-        fullsums[i][S_LEFT    ] = rungrid(&d, dataindex(d, dataY(d, sidx), 0), runamt, i);
+        fullsums[i][S_LEFT    ] = rungrid(&d, dataindex(d, dataY(d, sidx), 0), runamt, 1);
         fullsums[i][S_MIDDLE  ] = rungrid(&d, sidx, runamt, i);
-        fullsums[i][S_RIGHT   ] = rungrid(&d, dataindex(d, dataY(d, sidx), gridwidth - 1), runamt, i);
+        fullsums[i][S_RIGHT   ] = rungrid(&d, dataindex(d, dataY(d, sidx), gridwidth - 1), runamt, 1);
         fullsums[i][S_BTMLEFT ] = rungrid(&d, dataindex(d, d.lineCount - 1, 0), runamt, i);
-        fullsums[i][S_BOTTOM  ] = rungrid(&d, dataindex(d, d.lineCount - 1, dataX(d, sidx)), runamt, i);
+        fullsums[i][S_BOTTOM  ] = rungrid(&d, dataindex(d, d.lineCount - 1, dataX(d, sidx)), runamt, 1);
         fullsums[i][S_BTMRIGHT] = rungrid(&d, dataindex(d, d.lineCount - 1, gridwidth - 1), runamt, i);
     }
 
@@ -161,18 +161,18 @@ int main(int argc, char** argv)
 
     // block: (n^2 + n) / 2
     // zeros: (n/2)^2
-    const int64_t fullcardinals[2] = {p2blocks / 2 - 1, p2blocks / 2};
+    const int64_t fullcardinals[2] = {p2blocks / 2, p2blocks / 2 - 1};
     int64_t fullcorners[2];
     fullcorners[0] = (p2cblocks / 2) * (p2cblocks / 2);
     fullcorners[1] = (p2cblocks * p2cblocks + p2cblocks) / 2 - fullcorners[0];
     DEBUGLOG("fullcorners = %ld, %ld\n", fullcorners[0], fullcorners[1]);
     int64_t fullcounts[2][9] = {
-        { fullcorners[0], fullcardinals[0], fullcorners[0], fullcardinals[0], 1, fullcardinals[0], fullcorners[0], fullcardinals[0], fullcorners[0] },
-        { fullcorners[1], fullcardinals[1], fullcorners[1], fullcardinals[1], 0, fullcardinals[1], fullcorners[1], fullcardinals[1], fullcorners[1] },
+        { fullcorners[0], fullcardinals[0], fullcorners[0], fullcardinals[0], 0, fullcardinals[0], fullcorners[0], fullcardinals[0], fullcorners[0] },
+        { fullcorners[1], fullcardinals[1], fullcorners[1], fullcardinals[1], 1, fullcardinals[1], fullcorners[1], fullcardinals[1], fullcorners[1] },
     };
 
-    const int p2runamtcardinal = gridwidth;
-    const int p2runamtcorners0 = gridwidth + (p2steps % gridwidth);
+    const int p2runamtcardinal = gridwidth - 1;
+    const int p2runamtcorners0 = gridwidth + (p2steps % gridwidth) - 1;
     const int p2runamtcorners1 = (p2steps % gridwidth);
     DEBUGLOG("p2 run amounts: %d / %d / %d\n", p2runamtcardinal, p2runamtcorners0, p2runamtcorners1);
     int64_t partsums[2][9];
