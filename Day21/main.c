@@ -59,22 +59,22 @@ int64_t rungrid(const fdata* d, int sidx, int maxdepth, int depthoffset)
                     const int didx = idx + d->lineLength;
                     const int lidx = idx - 1;
                     const int ridx = idx + 1;
-                    if (uidx >= 0 && !been[(depth + 1) & 1][uidx] && (d->data[uidx] == '.' || d->data[uidx] == 'S'))
+                    if (uidx >= 0 && !been[(depth + 1) & 1][uidx] && (d->data[uidx] == '.'))
                     {
                         ADDWAITING(depth + 1, uidx);
                         anywaiting = true;
                     }
-                    if (didx < d->size && !been[(depth + 1) & 1][didx] && (d->data[didx] == '.' || d->data[didx] == 'S'))
+                    if (didx < d->size && !been[(depth + 1) & 1][didx] && (d->data[didx] == '.'))
                     {
                         ADDWAITING(depth + 1, didx);
                         anywaiting = true;
                     }
-                    if (lidx >= 0 && !been[(depth + 1) & 1][lidx] && (d->data[lidx] == '.' || d->data[lidx] == 'S'))
+                    if (lidx >= 0 && !been[(depth + 1) & 1][lidx] && (d->data[lidx] == '.'))
                     {
                         ADDWAITING(depth + 1, lidx);
                         anywaiting = true;
                     }
-                    if (ridx < d->size && !been[(depth + 1) & 1][ridx] && (d->data[ridx] == '.' || d->data[ridx] == 'S'))
+                    if (ridx < d->size && !been[(depth + 1) & 1][ridx] && (d->data[ridx] == '.'))
                     {
                         ADDWAITING(depth + 1, ridx);
                         anywaiting = true;
@@ -113,7 +113,7 @@ int main(int argc, char** argv)
     mmap_file file = mmap_file_open_ro("input.txt");
     const int fileSize = (int)(file.size);
 
-    register const chartype* data = file.data;
+    register chartype* data = file.data;
     const chartype* const end = file.data + fileSize;
 
     while (*data++ != '\n');
@@ -122,6 +122,7 @@ int main(int argc, char** argv)
     while (*data != 'S')
         ++data;
     int sidx = data - file.data;
+    *data = '.';
 
     fdata d = {
         .data = file.data,
