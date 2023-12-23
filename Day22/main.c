@@ -128,20 +128,22 @@ int main(int argc, char** argv)
         for (int bi = 0; bi < brickz[z].count; ++bi)
         {
             brickid bid = brickz[z].bricks[bi];
-            brick b = bricks[bid];
+            brick* b = bricks + bid;
+            bpos bstart = b->startpos;
+            bpos bend = b->endpos;
             int cmaxz = 0;
-            for (int bx = b.startpos.x; bx <= b.endpos.x; ++bx)
-                for (int by = b.startpos.y; by <= b.endpos.y; ++by)
+            for (int bx = bstart.x; bx <= bend.x; ++bx)
+                for (int by = bstart.y; by <= bend.y; ++by)
                     cmaxz = MAX(cmaxz, maxz[bx][by]);
 
             DEBUGLOG("brick %u @ %u,%u,%u~%u,%u,%u falling to %u\n",
-                bid, b.startpos.x, b.startpos.y, b.startpos.z, b.endpos.x, b.endpos.y, b.endpos.z, cmaxz + 1);
+                bid, bstart.x, bstart.y, bstart.z, bend.x, bend.y, bend.z, cmaxz + 1);
 
-            uint32_t supports[10] = {0};
+            brickid supports[10];
             uint32_t supportCount = 0;
-            for (int bx = b.startpos.x; bx <= b.endpos.x; ++bx)
+            for (int bx = bstart.x; bx <= bend.x; ++bx)
             {
-                for (int by = b.startpos.y; by <= b.endpos.y; ++by)
+                for (int by = bstart.y; by <= bend.y; ++by)
                 {
                     if (cmaxz > 0)
                     {
@@ -157,16 +159,17 @@ int main(int argc, char** argv)
                         }
                     }
                 sifound:
-                    maxz[bx][by] = cmaxz + 1 + (b.endpos.z - b.startpos.z);
+                    maxz[bx][by] = cmaxz + 1 + (bend.z - bstart.z);
                     maxbricks[bx][by] = bid;
                 }
             }
 
-            memcpy(bricks[bid].supportedby, supports, sizeof(brickid) * supportCount);
-            bricks[bid].supportedbyCount = supportCount;
-
+            b->supportedbyCount = supportCount;
             for (int i = 0; i < supportCount; ++i)
+            {
+                b->supportedby[i] = supports[i];
                 bricks[supports[i]].supporting[bricks[supports[i]].supportingCount++] = bid;
+            }
         }
     }
 
@@ -191,27 +194,24 @@ int main(int argc, char** argv)
             brick* b = brick_minheap_extract_min(queue);
             if (baleeted[b->id])
                 continue;
-            if (b->supportedbyCount != 0)
+            const uint16_t supportedbyCount = b->supportedbyCount;
+            if (supportedbyCount != 0)
             {
                 bool stillalive = false;
-                for (int j = 0; j < b->supportedbyCount; ++j)
+                for (int j = 0; j < supportedbyCount; ++j)
                 {
                     if (!baleeted[b->supportedby[j]])
-                    {
-                        stillalive = true;
-                        break;
-                    }
+                        goto nextiter;
                 }
 
-                if (!stillalive)
-                {
-                    DEBUGLOG("[%u] baleeted %u\n", i, b->id);
-                    ++deleteCount;
-                    baleeted[b->id] = true;
-                    for (int j = 0; j < b->supportingCount; ++j)
-                        brick_minheap_insert(queue, bricks + b->supporting[j]);
-                }
+                DEBUGLOG("[%u] baleeted %u\n", i, b->id);
+                ++deleteCount;
+                baleeted[b->id] = true;
+                const uint16_t supportingCount = b->supportingCount;
+                for (int j = 0; j < supportingCount; ++j)
+                    brick_minheap_insert(queue, bricks + b->supporting[j]);
             }
+        nextiter:
         }
 
         if (deleteCount == 0)
