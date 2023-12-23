@@ -29,7 +29,6 @@ typedef struct brick
     uint16_t supportedbyCount;
     brickid supporting[8];
     uint16_t supportingCount;
-    uint16_t dependentsCount;
 } brick;
 
 #define MINHEAP_NAME brick
@@ -163,12 +162,6 @@ int main(int argc, char** argv)
                 }
             }
 
-            if (supportCount == 1)
-            {
-                DEBUGLOG("brick %u dependent on %u\n", bid, supports[0]);
-                ++bricks[supports[0]].dependentsCount;
-            }
-
             memcpy(bricks[bid].supportedby, supports, sizeof(brickid) * supportCount);
             bricks[bid].supportedbyCount = supportCount;
 
@@ -177,13 +170,6 @@ int main(int argc, char** argv)
         }
     }
 
-    for (int i = 1; i < brickCount; ++i)
-    {
-        if (bricks[i].dependentsCount == 0)
-            ++sum1;
-    }
-
-    print_uint64(sum1);
     DSTOPWATCH_END(part1);
 
     DSTOPWATCH_START(part2);
@@ -192,6 +178,8 @@ int main(int argc, char** argv)
 
     for (int i = 1; i < brickCount; ++i)
     {
+        int64_t deleteCount = 0;
+
         bool baleeted[2048] = {0};
         DEBUGLOG("[%u] baleeted %u\n", i, i);
         baleeted[i] = true;
@@ -218,15 +206,20 @@ int main(int argc, char** argv)
                 if (!stillalive)
                 {
                     DEBUGLOG("[%u] baleeted %u\n", i, b->id);
-                    ++sum2;
+                    ++deleteCount;
                     baleeted[b->id] = true;
                     for (int j = 0; j < b->supportingCount; ++j)
                         brick_minheap_insert(queue, bricks + b->supporting[j]);
                 }
             }
         }
-    }    
 
+        if (deleteCount == 0)
+            ++sum1;
+        sum2 += deleteCount;
+    }
+
+    print_uint64(sum1);
     print_uint64(sum2);
     DSTOPWATCH_END(part2);
 
