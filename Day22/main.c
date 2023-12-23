@@ -127,10 +127,9 @@ int main(int argc, char** argv)
     {
         for (int bi = 0; bi < brickz[z].count; ++bi)
         {
-            brickid bid = brickz[z].bricks[bi];
-            brick* b = bricks + bid;
-            bpos bstart = b->startpos;
-            bpos bend = b->endpos;
+            const brickid bid = brickz[z].bricks[bi];
+            const bpos bstart = bricks[bid].startpos;
+            const bpos bend = bricks[bid].endpos;
             int cmaxz = 0;
             for (int bx = bstart.x; bx <= bend.x; ++bx)
                 for (int by = bstart.y; by <= bend.y; ++by)
@@ -164,10 +163,11 @@ int main(int argc, char** argv)
                 }
             }
 
-            b->supportedbyCount = supportCount;
+            memcpy(bricks[bid].supportedby, supports, sizeof(brickid) * supportCount);
+            bricks[bid].supportedbyCount = supportCount;
+
             for (int i = 0; i < supportCount; ++i)
             {
-                b->supportedby[i] = supports[i];
                 bricks[supports[i]].supporting[bricks[supports[i]].supportingCount++] = bid;
             }
         }
@@ -197,7 +197,6 @@ int main(int argc, char** argv)
             const uint16_t supportedbyCount = b->supportedbyCount;
             if (supportedbyCount != 0)
             {
-                bool stillalive = false;
                 for (int j = 0; j < supportedbyCount; ++j)
                 {
                     if (!baleeted[b->supportedby[j]])
