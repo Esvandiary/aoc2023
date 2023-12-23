@@ -26,8 +26,7 @@ typedef struct astar_node
 {
     uint32_t idx;
     int8_t prevdir;
-    bool traversed;
-    astar_edge next[5];
+    astar_edge next[4];
 } astar_node;
 
 typedef struct astar_state
@@ -120,70 +119,78 @@ typedef struct nextnode
     uint16_t cost;
 } nextnode;
 
+typedef struct slowstate
+{
+    bool traversed[192*192];
+} slowstate;
+
 static nextnode getnextnode(fdata* d, uint32_t idx, int32_t prevdir, uint16_t cost)
 {
-    if (idx == d->finishIndex)
-        return (nextnode) { .idx = idx, .prevdir = prevdir, .cost = cost };
-
     int validcount = 0;
-    int32_t lastvalid = PD_NONE;
-    uint32_t lastnextidx;
-    if (idx >= d->lineLength && prevdir != PD_OPPOSITE(PD_UP) && isvalid2[d->data[idx_in_dir(d, idx, PD_UP)]])
+    int32_t lastvalid = prevdir;
+    uint32_t lastnextidx = idx;
+    while (true)
     {
-        ++validcount;
-        lastvalid = PD_UP;
-        lastnextidx = idx - d->lineLength;
+        validcount = 0;
+        if (idx >= d->lineLength && prevdir != PD_OPPOSITE(PD_UP) && isvalid2[d->data[idx_in_dir(d, idx, PD_UP)]])
+        {
+            ++validcount;
+            lastvalid = PD_UP;
+            lastnextidx -= d->lineLength;
+        }
+        if (idx > 0 && prevdir != PD_OPPOSITE(PD_LEFT) && isvalid2[d->data[idx_in_dir(d, idx, PD_LEFT)]])
+        {
+            ++validcount;
+            lastvalid = PD_LEFT;
+            lastnextidx -= 1;
+        }
+        if (idx + 1 < d->size && prevdir != PD_OPPOSITE(PD_RIGHT) && isvalid2[d->data[idx_in_dir(d, idx, PD_RIGHT)]])
+        {
+            ++validcount;
+            lastvalid = PD_RIGHT;
+            lastnextidx += 1;
+        }
+        if (idx + d->lineLength < d->size && prevdir != PD_OPPOSITE(PD_DOWN) && isvalid2[d->data[idx_in_dir(d, idx, PD_DOWN)]])
+        {
+            ++validcount;
+            lastvalid = PD_DOWN;
+            lastnextidx += d->lineLength;
+        }
+        if (validcount != 1)
+            break;
+        idx = lastnextidx;
+        prevdir = lastvalid;
+        ++cost;
     }
-    if (idx > 0 && prevdir != PD_OPPOSITE(PD_LEFT) && isvalid2[d->data[idx_in_dir(d, idx, PD_LEFT)]])
-    {
-        ++validcount;
-        lastvalid = PD_LEFT;
-        lastnextidx = idx - 1;
-    }
-    if (idx + 1 < d->size && prevdir != PD_OPPOSITE(PD_RIGHT) && isvalid2[d->data[idx_in_dir(d, idx, PD_RIGHT)]])
-    {
-        ++validcount;
-        lastvalid = PD_RIGHT;
-        lastnextidx = idx + 1;
-    }
-    if (idx + d->lineLength < d->size && prevdir != PD_OPPOSITE(PD_DOWN) && isvalid2[d->data[idx_in_dir(d, idx, PD_DOWN)]])
-    {
-        ++validcount;
-        lastvalid = PD_DOWN;
-        lastnextidx = idx + d->lineLength;
-    }
-
     // DEBUGLOG("getnextnode((%d,%d) prevdir %s cost %d): %s\n", dataY(*d, idx), dataX(*d, idx), pdnames[prevdir], cost, (validcount == 0 ? "invalid" : validcount == 1 ? "continue" : "node"));
 
     switch (validcount)
     {
         case 0:
-            return (nextnode) { .idx = -1 };
-        case 1:
-            return getnextnode(d, lastnextidx, lastvalid, cost + 1);
+            if (idx != d->finishIndex)
+                return (nextnode) { .idx = -1 };
         default:
             return (nextnode) { .idx = idx, .prevdir = prevdir, .cost = cost };
     }
 }
 
-static void buildgraph(fdata* d, astar_node* nodes, astar_node* curnode)
+static void buildgraph(fdata* d, slowstate* state, astar_node* nodes, astar_node* curnode)
 {
     // DEBUGLOG("[%d,%d] checking node from %s\n", dataY(*d, curnode->idx), dataX(*d, curnode->idx), ednames[curnode->prevdir]);
-    curnode->traversed = true;
+    state->traversed[curnode->idx] = true;
 
     for (int dir = 0; dir < 4; ++dir)
     {
-        int32_t dataidx = idx_in_dir(d, curnode->idx, dir);
+        const int32_t dataidx = idx_in_dir(d, curnode->idx, dir);
         // DEBUGLOG("[%d,%d]    checking %s at (%d,%d)\n", dataY(*d, curnode->idx), dataX(*d, curnode->idx), pdnames[dir], dataY(*d, dataidx), dataX(*d, dataidx));
         if (curnode->prevdir != PD_OPPOSITE(dir) && dataidx >= 0 && dataidx < d->size && isvalid2[d->data[dataidx]])
         {
             nextnode diridx = getnextnode(d, dataidx, dir, 0);
             if (diridx.idx >= 0)
             {
-                astar_node* dirnodebase = nodes + (diridx.idx << 2);
-                if (dirnodebase[0].traversed || dirnodebase[1].traversed || dirnodebase[2].traversed || dirnodebase[3].traversed)
+                if (state->traversed[diridx.idx])
                     continue;
-                astar_node* dirnode = dirnodebase + diridx.prevdir;
+                astar_node* const dirnode = nodes + (diridx.idx << 2) + diridx.prevdir;
                 // DEBUGLOG("[%d,%d]    next in dir %s: [%d,%d from %s] with cost %u\n", dataY(*d, curnode->idx), dataX(*d, curnode->idx), pdnames[dir], dataY(*d, diridx.idx), dataX(*d, diridx.idx), ednames[diridx.prevdir], diridx.cost);
                 dirnode->idx = diridx.idx;
                 dirnode->prevdir = diridx.prevdir;
@@ -191,17 +198,17 @@ static void buildgraph(fdata* d, astar_node* nodes, astar_node* curnode)
                 curnode->next[dir].node = dirnode;
                 curnode->next[dir].cost = diridx.cost;
 
-                buildgraph(d, nodes, dirnode);
+                buildgraph(d, state, nodes, dirnode);
             }
         }
     }
 
-    curnode->traversed = false;
+    state->traversed[curnode->idx] = false;
 }
 
-static void printgraph(const fdata* d, astar_node* node, int depth)
+static void printgraph(const fdata* d, slowstate* state, astar_node* node, int depth)
 {
-    node->traversed = true;
+    state->traversed[node->idx] = true;
     for (int i = 0; i < depth; ++i)
         DEBUGLOG("  ");
     DEBUGLOG("(%d,%d) from %s\n", dataY(*d, node->idx), dataX(*d, node->idx), ednames[node->prevdir]);
@@ -209,33 +216,31 @@ static void printgraph(const fdata* d, astar_node* node, int depth)
     {
         if (node->next[i].node)
         {
-            astar_node* dirnodebase = node->next[i].node - node->next[i].node->prevdir;
-            if (dirnodebase[0].traversed || dirnodebase[1].traversed || dirnodebase[2].traversed || dirnodebase[3].traversed)
+            if (state->traversed[node->next[i].node->idx])
                 continue;
-            printgraph(d, node->next[i].node, depth + 1);
+            printgraph(d, state, node->next[i].node, depth + 1);
         }
     }
-    node->traversed = false;
+    state->traversed[node->idx] = false;
 }
 
-static int64_t findmaxlen2slowly(fdata* d, astar_node* node, int64_t cost)
+static int64_t findmaxlen2slowly(fdata* d, slowstate* state, astar_node* node, int64_t cost)
 {
     if (node->idx == d->finishIndex)
         return cost;
     
-    node->traversed = true;
+    state->traversed[node->idx] = true;
     int64_t newcost = -1;
     for (int i = 0; i < 4; ++i)
     {
         if (!node->next[i].node)
             continue;
-        astar_node* dirnodebase = node->next[i].node - node->next[i].node->prevdir;
-        if (dirnodebase[0].traversed || dirnodebase[1].traversed || dirnodebase[2].traversed || dirnodebase[3].traversed)
+        if (state->traversed[node->next[i].node->idx])
             continue;
-        int64_t ncost = 1 + findmaxlen2slowly(d, node->next[i].node, cost + node->next[i].cost);
+        int64_t ncost = 1 + findmaxlen2slowly(d, state, node->next[i].node, cost + node->next[i].cost);
         newcost = MAX(newcost, ncost);
     }
-    node->traversed = false;
+    state->traversed[node->idx] = false;
     return newcost;
 }
 
@@ -248,12 +253,13 @@ static int64_t findmaxlen2(fdata* d)
         .prevdir = PD_NONE,
     };
 
+    slowstate state = {0};
     DEBUGLOG("building graph\n");
-    buildgraph(d, nodes, &curnode);
-    // printgraph(d, &curnode, 0);
+    buildgraph(d, &state, nodes, &curnode);
+    // printgraph(d, &state, &curnode, 0);
     DEBUGLOG("built graph\n");
 
-    return findmaxlen2slowly(d, &curnode, 0);
+    return findmaxlen2slowly(d, &state, &curnode, 0);
     // return calculate(d, &curnode, nodes + ((d->finishIndex << 2) | PD_DOWN));
 }
 
