@@ -122,6 +122,7 @@ typedef struct nextnode
 typedef struct slowstate
 {
     bool traversed[192*192];
+    nextnode nextnodes[192*192][4];
 } slowstate;
 
 static nextnode getnextnode(fdata* d, uint32_t idx, int32_t prevdir, uint16_t cost)
@@ -185,7 +186,9 @@ static void buildgraph(fdata* d, slowstate* state, astar_node* nodes, astar_node
         // DEBUGLOG("[%d,%d]    checking %s at (%d,%d)\n", dataY(*d, curnode->idx), dataX(*d, curnode->idx), pdnames[dir], dataY(*d, dataidx), dataX(*d, dataidx));
         if (curnode->prevdir != PD_OPPOSITE(dir) && dataidx >= 0 && dataidx < d->size && isvalid2[d->data[dataidx]])
         {
-            nextnode diridx = getnextnode(d, dataidx, dir, 0);
+            if (!state->nextnodes[dataidx][dir].idx)
+                state->nextnodes[dataidx][dir] = getnextnode(d, dataidx, dir, 0);
+            nextnode diridx = state->nextnodes[dataidx][dir];
             if (diridx.idx >= 0)
             {
                 if (state->traversed[diridx.idx])
@@ -255,9 +258,11 @@ static int64_t findmaxlen2(fdata* d)
 
     slowstate state = {0};
     DEBUGLOG("building graph\n");
+    DSTOPWATCH_START(graph);
     buildgraph(d, &state, nodes, &curnode);
+    DSTOPWATCH_END(graph);
     // printgraph(d, &state, &curnode, 0);
-    DEBUGLOG("built graph\n");
+    DSTOPWATCH_PRINT(graph);
 
     return findmaxlen2slowly(d, &state, &curnode, 0);
     // return calculate(d, &curnode, nodes + ((d->finishIndex << 2) | PD_DOWN));
