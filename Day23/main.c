@@ -250,7 +250,7 @@ static int64_t findmaxlen2(fdata* d)
 
     DEBUGLOG("building graph\n");
     buildgraph(d, nodes, &curnode);
-    printgraph(d, &curnode, 0);
+    // printgraph(d, &curnode, 0);
     DEBUGLOG("built graph\n");
 
     return findmaxlen2slowly(d, &curnode, 0);
