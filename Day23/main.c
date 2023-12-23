@@ -66,7 +66,7 @@ static const char* const* pdnames = pdnamesraw + 1;
 static const char* const ednamesraw[] = {"none", "below", "the right", "above", "the left"};
 static const char* const* ednames = ednamesraw + 1;
 
-static inline FORCEINLINE int32_t idx_in_dir(const fdata* d, int32_t idx, int32_t dir)
+static inline FORCEINLINE int32_t idx_in_dir(const fdata* const d, const int32_t idx, const int32_t dir)
 {
     switch (dir)
     {
@@ -125,7 +125,7 @@ typedef struct slowstate
     nextnode nextnodes[192*192][4];
 } slowstate;
 
-static nextnode getnextnode(fdata* d, uint32_t idx, int32_t prevdir, uint16_t cost)
+static nextnode getnextnode(const fdata* const d, uint32_t idx, int32_t prevdir, uint16_t cost)
 {
     int validcount = 0;
     int32_t lastvalid = prevdir;
@@ -175,7 +175,7 @@ static nextnode getnextnode(fdata* d, uint32_t idx, int32_t prevdir, uint16_t co
     }
 }
 
-static void buildgraph(fdata* d, slowstate* state, astar_node* nodes, astar_node* curnode)
+static void buildgraph(const fdata* const d, slowstate* const state, astar_node* const nodes, astar_node* const curnode)
 {
     // DEBUGLOG("[%d,%d] checking node from %s\n", dataY(*d, curnode->idx), dataX(*d, curnode->idx), ednames[curnode->prevdir]);
     state->traversed[curnode->idx] = true;
@@ -188,7 +188,7 @@ static void buildgraph(fdata* d, slowstate* state, astar_node* nodes, astar_node
         {
             if (!state->nextnodes[dataidx][dir].idx)
                 state->nextnodes[dataidx][dir] = getnextnode(d, dataidx, dir, 0);
-            nextnode diridx = state->nextnodes[dataidx][dir];
+            const nextnode diridx = state->nextnodes[dataidx][dir];
             if (diridx.idx >= 0)
             {
                 if (state->traversed[diridx.idx])
@@ -227,7 +227,7 @@ static void printgraph(const fdata* d, slowstate* state, astar_node* node, int d
     state->traversed[node->idx] = false;
 }
 
-static int64_t findmaxlen2slowly(fdata* d, slowstate* state, astar_node* node, int64_t cost)
+static int64_t findmaxlen2slowly(const fdata* const d, slowstate* const state, const astar_node* const node, int64_t cost)
 {
     if (node->idx == d->finishIndex)
         return cost;
