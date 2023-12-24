@@ -305,9 +305,11 @@ static int64_t findmaxlen2par_setup(const fdata* const d, parsetupstate* const s
         for (int i = 0; i < 4; ++i)
         {
             if (segments[i].node)
+            {
                 pthread_join(segments[i].thread, NULL);
-            int64_t ncost = 1 + segments[i].maxlen;
-            newcost = MAX(newcost, ncost);
+                int64_t ncost = 1 + segments[i].maxlen;
+                newcost = MAX(newcost, ncost);
+            }
         }
     }
     else
