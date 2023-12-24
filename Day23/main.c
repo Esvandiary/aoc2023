@@ -213,6 +213,189 @@ static void buildgraph(const fdata* const d, slowstate* const state, astar_node*
     state->traversed[curnode->idx] = false;
 }
 
+static void buildgraphpar_run(const fdata* const d, slowstate* const state, astar_node* const nodes, astar_node* const curnode)
+{
+    // DEBUGLOG("[%d,%d] checking node from %s\n", dataY(*d, curnode->idx), dataX(*d, curnode->idx), ednames[curnode->prevdir]);
+    state->traversed[curnode->idx] = true;
+
+    for (int dir = 0; dir < 4; ++dir)
+    {
+        const int32_t dataidx = idx_in_dir(d, curnode->idx, dir);
+        // DEBUGLOG("[%d,%d]    checking %s at (%d,%d)\n", dataY(*d, curnode->idx), dataX(*d, curnode->idx), pdnames[dir], dataY(*d, dataidx), dataX(*d, dataidx));
+        if (curnode->prevdir != PD_OPPOSITE(dir) && dataidx >= 0 && dataidx < d->size && isvalid2[d->data[dataidx]])
+        {
+            if (!state->nextnodes[dataidx][dir].idx)
+                state->nextnodes[dataidx][dir] = getnextnode(d, dataidx, dir, 0);
+            const nextnode diridx = state->nextnodes[dataidx][dir];
+            if (diridx.idx >= 0)
+            {
+                if (state->traversed[diridx.idx])
+                    continue;
+                astar_node* const dirnode = nodes + (diridx.idx << 2) + diridx.prevdir;
+                // DEBUGLOG("[%d,%d]    next in dir %s: [%d,%d from %s] with cost %u\n", dataY(*d, curnode->idx), dataX(*d, curnode->idx), pdnames[dir], dataY(*d, diridx.idx), dataX(*d, diridx.idx), ednames[diridx.prevdir], diridx.cost);
+                dirnode->idx = diridx.idx;
+                dirnode->prevdir = diridx.prevdir;
+
+                curnode->next[dir].node = dirnode;
+                curnode->next[dir].cost = diridx.cost;
+
+                buildgraphpar_run(d, state, nodes, dirnode);
+            }
+        }
+    }
+
+    state->traversed[curnode->idx] = false;
+}
+
+typedef struct bpworkstate
+{
+    slowstate* state;
+    astar_node* node;
+    int64_t cost;
+} bpworkstate;
+
+struct bpsetupstate;
+
+typedef struct bpsegment
+{
+    pthread_t thread;
+    const fdata* d;
+    astar_node* nodes;
+    struct bpsetupstate* state;
+    uint32_t firstwork;
+} bpsegment;
+
+typedef struct bpsetupstate
+{
+    slowstate* state;
+    bpsegment segments[32];
+    uint32_t segmentCount;
+    bpworkstate workstates[512];
+    uint32_t workstatesCount;
+    uint32_t nextworkstate;
+} bpsetupstate;
+
+static void* buildgraphpar_thread(void* vseg)
+{
+    bpsegment* seg = (bpsegment*)vseg;
+
+    int workidx = seg->firstwork;
+    do
+    {
+        buildgraphpar_run(
+            seg->d,
+            seg->state->workstates[workidx].state,
+            seg->nodes,
+            seg->state->workstates[workidx].node);
+    } while ((workidx = __atomic_fetch_add(&seg->state->nextworkstate, 1, __ATOMIC_ACQ_REL)) < seg->state->workstatesCount);
+    return NULL;
+}
+
+static void buildgraphpar_setup(const fdata* const d, bpsetupstate* const state, astar_node* nodes, astar_node* const curnode, int depth, int targetdepth)
+{
+    state->state->traversed[curnode->idx] = true;
+    int64_t newcost = -1;
+    if (depth == targetdepth)
+    {
+        for (int dir = 0; dir < 4; ++dir)
+        {
+            const int32_t dataidx = idx_in_dir(d, curnode->idx, dir);
+            // DEBUGLOG("[%d,%d]    checking %s at (%d,%d)\n", dataY(*d, curnode->idx), dataX(*d, curnode->idx), pdnames[dir], dataY(*d, dataidx), dataX(*d, dataidx));
+            if (curnode->prevdir != PD_OPPOSITE(dir) && dataidx >= 0 && dataidx < d->size && isvalid2[d->data[dataidx]])
+            {
+                if (!state->state->nextnodes[dataidx][dir].idx)
+                    state->state->nextnodes[dataidx][dir] = getnextnode(d, dataidx, dir, 0);
+                const nextnode diridx = state->state->nextnodes[dataidx][dir];
+                if (diridx.idx >= 0)
+                {
+                    if (state->state->traversed[diridx.idx])
+                        continue;
+                    astar_node* const dirnode = nodes + (diridx.idx << 2) + diridx.prevdir;
+                    // DEBUGLOG("[%d,%d]    next in dir %s: [%d,%d from %s] with cost %u\n", dataY(*d, curnode->idx), dataX(*d, curnode->idx), pdnames[dir], dataY(*d, diridx.idx), dataX(*d, diridx.idx), ednames[diridx.prevdir], diridx.cost);
+                    dirnode->idx = diridx.idx;
+                    dirnode->prevdir = diridx.prevdir;
+
+                    curnode->next[dir].node = dirnode;
+                    curnode->next[dir].cost = diridx.cost;
+
+                    int wsidx = state->workstatesCount;
+                    state->workstates[wsidx].node = curnode->next[dir].node;
+                    state->workstates[wsidx].state = (slowstate*)malloc(sizeof(slowstate));
+                    memcpy(state->workstates[wsidx].state, state->state, sizeof(slowstate));
+
+                    ++state->workstatesCount;
+                }
+            }
+        }
+    }
+    else
+    {
+        for (int dir = 0; dir < 4; ++dir)
+        {
+            const int32_t dataidx = idx_in_dir(d, curnode->idx, dir);
+            // DEBUGLOG("[%d,%d]    checking %s at (%d,%d)\n", dataY(*d, curnode->idx), dataX(*d, curnode->idx), pdnames[dir], dataY(*d, dataidx), dataX(*d, dataidx));
+            if (curnode->prevdir != PD_OPPOSITE(dir) && dataidx >= 0 && dataidx < d->size && isvalid2[d->data[dataidx]])
+            {
+                if (!state->state->nextnodes[dataidx][dir].idx)
+                    state->state->nextnodes[dataidx][dir] = getnextnode(d, dataidx, dir, 0);
+                const nextnode diridx = state->state->nextnodes[dataidx][dir];
+                if (diridx.idx >= 0)
+                {
+                    if (state->state->traversed[diridx.idx])
+                        continue;
+                    astar_node* const dirnode = nodes + (diridx.idx << 2) + diridx.prevdir;
+                    // DEBUGLOG("[%d,%d]    next in dir %s: [%d,%d from %s] with cost %u\n", dataY(*d, curnode->idx), dataX(*d, curnode->idx), pdnames[dir], dataY(*d, diridx.idx), dataX(*d, diridx.idx), ednames[diridx.prevdir], diridx.cost);
+                    dirnode->idx = diridx.idx;
+                    dirnode->prevdir = diridx.prevdir;
+
+                    curnode->next[dir].node = dirnode;
+                    curnode->next[dir].cost = diridx.cost;
+
+                    buildgraphpar_setup(d, state, nodes, dirnode, depth + 1, targetdepth);
+                }
+            }
+        }
+    }
+    state->state->traversed[curnode->idx] = false;
+}
+
+static void buildgraphpar(const fdata* const d, slowstate* const state, astar_node* const nodes, astar_node* const node)
+{
+#if defined(__linux__)
+    int nthreads = get_nprocs();
+#elif defined(_WIN32)
+    int nthreads = atoi(getenv("NUMBER_OF_PROCESSORS"));
+#else
+    return findmaxlen2slowly(d, state, node, cost);
+#endif
+    DEBUGLOG("bg nthreads %d\n", nthreads);
+
+    int targetdepth = 6;
+
+    bpsetupstate pss = { .state = state };
+    buildgraphpar_setup(d, &pss, nodes, node, 0, targetdepth);
+
+    DEBUGLOG("bg work states %u\n", pss.workstatesCount);
+
+    nthreads = MIN(nthreads, 32);
+
+    int64_t newcost = 0;
+    pss.nextworkstate = nthreads;
+    for (int i = 0; i < nthreads; ++i)
+    {
+        pss.segments[i].d = d;
+        pss.segments[i].firstwork = i;
+        pss.segments[i].nodes = nodes;
+        pss.segments[i].state = &pss;
+
+        pthread_create(&pss.segments[i].thread, NULL, buildgraphpar_thread, pss.segments + i);        
+    }
+    for (int i = 0; i < nthreads; ++i)
+    {
+        pthread_join(pss.segments[i].thread, NULL);
+    }
+}
+
 static void printgraph(const fdata* d, slowstate* state, astar_node* node, int depth)
 {
     state->traversed[node->idx] = true;
@@ -386,7 +569,8 @@ static int64_t findmaxlen2(fdata* d)
     slowstate state = {0};
     DEBUGLOG("building graph\n");
     DSTOPWATCH_START(graph);
-    buildgraph(d, &state, nodes, &curnode);
+    // buildgraph(d, &state, nodes, &curnode);
+    buildgraphpar(d, &state, nodes, &curnode);
     DSTOPWATCH_END(graph);
     // printgraph(d, &state, &curnode, 0);
     DSTOPWATCH_PRINT(graph);
