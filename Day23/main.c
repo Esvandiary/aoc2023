@@ -251,65 +251,75 @@ static int64_t findmaxlen2slowly(const fdata* const d, slowstate* const state, c
     return newcost;
 }
 
-typedef struct parsetupstate
+typedef struct parworkstate
 {
     slowstate* state;
-    uint32_t visited[8];
-    uint32_t visitedCount;
-} parsetupstate;
+    astar_node* node;
+    int64_t cost;
+} parworkstate;
+
+struct parsetupstate;
 
 typedef struct segment
 {
     pthread_t thread;
     const fdata* d;
-    slowstate* state;
-    astar_node* node;
-    int64_t cost;
-    uint64_t maxlen; // out
+    struct parsetupstate* state;
+    uint32_t firstwork;
+    int64_t maxlen; // out
 } segment;
+
+typedef struct parsetupstate
+{
+    slowstate* state;
+    uint32_t visited[8];
+    uint32_t visitedCount;
+    segment segments[32];
+    uint32_t segmentCount;
+    parworkstate workstates[512];
+    uint32_t workstatesCount;
+    uint32_t nextworkstate;
+} parsetupstate;
 
 static void* findmaxlenpar2_thread(void* vseg)
 {
     segment* seg = (segment*)vseg;
-    seg->maxlen = findmaxlen2slowly(seg->d, seg->state, seg->node, seg->cost);
+
+    int workidx = seg->firstwork;
+    do
+    {
+        int64_t result = findmaxlen2slowly(
+            seg->d,
+            seg->state->workstates[workidx].state,
+            seg->state->workstates[workidx].node,
+            seg->state->workstates[workidx].cost);
+        seg->maxlen = MAX(seg->maxlen, result);
+    } while ((workidx = __atomic_fetch_add(&seg->state->nextworkstate, 1, __ATOMIC_ACQ_REL)) < seg->state->workstatesCount);
     return NULL;
 }
 
-static int64_t findmaxlen2par_setup(const fdata* const d, parsetupstate* const state, const astar_node* const node, int64_t cost, int depth, int targetdepth)
+static void findmaxlen2par_setup(const fdata* const d, parsetupstate* const state, const astar_node* const node, int64_t cost, int depth, int targetdepth)
 {
-    if (node->idx == d->finishIndex)
-        return cost;
-    
     state->state->traversed[node->idx] = true;
     state->visited[state->visitedCount++] = node->idx;
     int64_t newcost = -1;
     if (depth == targetdepth)
     {
-        segment segments[4] = {0};
         for (int i = 0; i < 4; ++i)
         {
             if (!node->next[i].node)
                 continue;
             if (state->state->traversed[node->next[i].node->idx])
                 continue;
-
-            segments[i].d = d;
-            segments[i].node = node->next[i].node;
-            segments[i].cost = cost + node->next[i].cost;
-            segments[i].state = (slowstate*)calloc(1, sizeof(slowstate));
+            
+            int wsidx = state->workstatesCount;
+            state->workstates[wsidx].node = node->next[i].node;
+            state->workstates[wsidx].cost = cost + node->next[i].cost;
+            state->workstates[wsidx].state = (slowstate*)calloc(1, sizeof(slowstate));
             for (int vs = 0; vs < state->visitedCount; ++vs)
-                segments[i].state->traversed[state->visited[vs]] = true;
+                state->workstates[wsidx].state->traversed[state->visited[vs]] = true;
 
-            pthread_create(&segments[i].thread, NULL, findmaxlenpar2_thread, segments + i);
-        }
-        for (int i = 0; i < 4; ++i)
-        {
-            if (segments[i].node)
-            {
-                pthread_join(segments[i].thread, NULL);
-                int64_t ncost = 1 + segments[i].maxlen;
-                newcost = MAX(newcost, ncost);
-            }
+            ++state->workstatesCount;
         }
     }
     else
@@ -320,13 +330,11 @@ static int64_t findmaxlen2par_setup(const fdata* const d, parsetupstate* const s
                 continue;
             if (state->state->traversed[node->next[i].node->idx])
                 continue;
-            int64_t ncost = 1 + findmaxlen2par_setup(d, state, node->next[i].node, cost + node->next[i].cost, depth + 1, targetdepth);
-            newcost = MAX(newcost, ncost);
+            findmaxlen2par_setup(d, state, node->next[i].node, cost + 1 + node->next[i].cost, depth + 1, targetdepth);
         }
     }
     --state->visitedCount;
     state->state->traversed[node->idx] = false;
-    return newcost;
 }
 
 static int64_t findmaxlen2par(const fdata* const d, slowstate* const state, const astar_node* const node, int64_t cost)
@@ -340,31 +348,30 @@ static int64_t findmaxlen2par(const fdata* const d, slowstate* const state, cons
 #endif
     DEBUGLOG("nthreads %d\n", nthreads);
 
-    int targetdepth = 0;
-    switch (nthreads)
-    {
-        case 1:
-        case 2:
-            targetdepth = 1;
-            break;
-        case 3:
-        case 4:
-            targetdepth = 2;
-            break;
-        case 5:
-        case 6:
-        case 7:
-        case 8:
-            targetdepth = 3;
-            break;
-        default:
-            targetdepth = 4;
-            break;
-    }
-    DEBUGLOG("targetdepth %d\n", targetdepth);
+    int targetdepth = 6;
 
-    parsetupstate pss = { .state = state, .visitedCount = 0 };
-    return findmaxlen2par_setup(d, &pss, node, cost, 0, targetdepth);
+    parsetupstate pss = { .state = state };
+    findmaxlen2par_setup(d, &pss, node, cost, 0, targetdepth);
+
+    DEBUGLOG("work states %u\n", pss.workstatesCount);
+
+    int64_t newcost = 0;
+    pss.nextworkstate = nthreads;
+    for (int i = 0; i < nthreads; ++i)
+    {
+        pss.segments[i].d = d;
+        pss.segments[i].firstwork = i;
+        pss.segments[i].state = &pss;
+
+        pthread_create(&pss.segments[i].thread, NULL, findmaxlenpar2_thread, pss.segments + i);        
+    }
+    for (int i = 0; i < nthreads; ++i)
+    {
+        pthread_join(pss.segments[i].thread, NULL);
+        int64_t ncost = 1 + pss.segments[i].maxlen;
+        newcost = MAX(newcost, ncost);
+    }
+    return newcost;
 }
 
 static int64_t findmaxlen2(fdata* d)
