@@ -125,8 +125,8 @@ typedef struct nextnode
 
 typedef struct slowstate
 {
-    bool traversed[192*192];
-    nextnode nextnodes[192*192][4];
+    bool traversed[32768];
+    nextnode nextnodes[32768][4];
 } slowstate;
 
 static nextnode getnextnode(const fdata* const d, uint32_t idx, int32_t prevdir, uint16_t cost)
@@ -213,45 +213,11 @@ static void buildgraph(const fdata* const d, slowstate* const state, astar_node*
     state->traversed[curnode->idx] = false;
 }
 
-static void buildgraphpar_run(const fdata* const d, slowstate* const state, astar_node* const nodes, astar_node* const curnode)
-{
-    // DEBUGLOG("[%d,%d] checking node from %s\n", dataY(*d, curnode->idx), dataX(*d, curnode->idx), ednames[curnode->prevdir]);
-    state->traversed[curnode->idx] = true;
-
-    for (int dir = 0; dir < 4; ++dir)
-    {
-        const int32_t dataidx = idx_in_dir(d, curnode->idx, dir);
-        // DEBUGLOG("[%d,%d]    checking %s at (%d,%d)\n", dataY(*d, curnode->idx), dataX(*d, curnode->idx), pdnames[dir], dataY(*d, dataidx), dataX(*d, dataidx));
-        if (curnode->prevdir != PD_OPPOSITE(dir) && dataidx >= 0 && dataidx < d->size && isvalid2[d->data[dataidx]])
-        {
-            if (!state->nextnodes[dataidx][dir].idx)
-                state->nextnodes[dataidx][dir] = getnextnode(d, dataidx, dir, 0);
-            const nextnode diridx = state->nextnodes[dataidx][dir];
-            if (diridx.idx >= 0)
-            {
-                if (state->traversed[diridx.idx])
-                    continue;
-                astar_node* const dirnode = nodes + (diridx.idx << 2) + diridx.prevdir;
-                // DEBUGLOG("[%d,%d]    next in dir %s: [%d,%d from %s] with cost %u\n", dataY(*d, curnode->idx), dataX(*d, curnode->idx), pdnames[dir], dataY(*d, diridx.idx), dataX(*d, diridx.idx), ednames[diridx.prevdir], diridx.cost);
-                dirnode->idx = diridx.idx;
-                dirnode->prevdir = diridx.prevdir;
-
-                curnode->next[dir].node = dirnode;
-                curnode->next[dir].cost = diridx.cost;
-
-                buildgraphpar_run(d, state, nodes, dirnode);
-            }
-        }
-    }
-
-    state->traversed[curnode->idx] = false;
-}
-
 typedef struct bpworkstate
 {
-    slowstate* state;
     astar_node* node;
     int64_t cost;
+    bool* traversed;
 } bpworkstate;
 
 struct bpsetupstate;
@@ -263,17 +229,52 @@ typedef struct bpsegment
     astar_node* nodes;
     struct bpsetupstate* state;
     uint32_t firstwork;
+    nextnode nextnodes[32768][4];
 } bpsegment;
 
 typedef struct bpsetupstate
 {
     slowstate* state;
-    bpsegment segments[32];
+    bpsegment* segments;
     uint32_t segmentCount;
     bpworkstate workstates[512];
     uint32_t workstatesCount;
     uint32_t nextworkstate;
 } bpsetupstate;
+
+static void buildgraphpar_run(const fdata* const d, bool* const traversed, nextnode (* const nextnodes)[4], astar_node* const nodes, astar_node* const curnode)
+{
+    // DEBUGLOG("[%d,%d] checking node from %s\n", dataY(*d, curnode->idx), dataX(*d, curnode->idx), ednames[curnode->prevdir]);
+    traversed[curnode->idx] = true;
+
+    for (int dir = 0; dir < 4; ++dir)
+    {
+        const int32_t dataidx = idx_in_dir(d, curnode->idx, dir);
+        // DEBUGLOG("[%d,%d]    checking %s at (%d,%d)\n", dataY(*d, curnode->idx), dataX(*d, curnode->idx), pdnames[dir], dataY(*d, dataidx), dataX(*d, dataidx));
+        if (curnode->prevdir != PD_OPPOSITE(dir) && dataidx >= 0 && dataidx < d->size && isvalid2[d->data[dataidx]])
+        {
+            if (!nextnodes[dataidx][dir].idx)
+                nextnodes[dataidx][dir] = getnextnode(d, dataidx, dir, 0);
+            const nextnode diridx = nextnodes[dataidx][dir];
+            if (diridx.idx >= 0)
+            {
+                if (traversed[diridx.idx])
+                    continue;
+                astar_node* const dirnode = nodes + (diridx.idx << 2) + diridx.prevdir;
+                // DEBUGLOG("[%d,%d]    next in dir %s: [%d,%d from %s] with cost %u\n", dataY(*d, curnode->idx), dataX(*d, curnode->idx), pdnames[dir], dataY(*d, diridx.idx), dataX(*d, diridx.idx), ednames[diridx.prevdir], diridx.cost);
+                dirnode->idx = diridx.idx;
+                dirnode->prevdir = diridx.prevdir;
+
+                curnode->next[dir].node = dirnode;
+                curnode->next[dir].cost = diridx.cost;
+
+                buildgraphpar_run(d, traversed, nextnodes, nodes, dirnode);
+            }
+        }
+    }
+
+    traversed[curnode->idx] = false;
+}
 
 static void* buildgraphpar_thread(void* vseg)
 {
@@ -284,7 +285,8 @@ static void* buildgraphpar_thread(void* vseg)
     {
         buildgraphpar_run(
             seg->d,
-            seg->state->workstates[workidx].state,
+            seg->state->workstates[workidx].traversed,
+            seg->nextnodes,
             seg->nodes,
             seg->state->workstates[workidx].node);
     } while ((workidx = __atomic_fetch_add(&seg->state->nextworkstate, 1, __ATOMIC_ACQ_REL)) < seg->state->workstatesCount);
@@ -320,8 +322,8 @@ static void buildgraphpar_setup(const fdata* const d, bpsetupstate* const state,
 
                     int wsidx = state->workstatesCount;
                     state->workstates[wsidx].node = curnode->next[dir].node;
-                    state->workstates[wsidx].state = (slowstate*)malloc(sizeof(slowstate));
-                    memcpy(state->workstates[wsidx].state, state->state, sizeof(slowstate));
+                    state->workstates[wsidx].traversed = (bool*)malloc(sizeof(bool)*32768);
+                    memcpy(state->workstates[wsidx].traversed, &state->state->traversed, sizeof(state->state->traversed));
 
                     ++state->workstatesCount;
                 }
@@ -372,7 +374,7 @@ static void buildgraphpar(const fdata* const d, slowstate* const state, astar_no
 
     int targetdepth = 6;
 
-    bpsetupstate pss = { .state = state };
+    bpsetupstate pss = { .state = state, .segments = (bpsegment*)calloc(32, sizeof(bpsegment)) };
     buildgraphpar_setup(d, &pss, nodes, node, 0, targetdepth);
 
     DEBUGLOG("bg work states %u\n", pss.workstatesCount);
@@ -387,6 +389,7 @@ static void buildgraphpar(const fdata* const d, slowstate* const state, astar_no
         pss.segments[i].firstwork = i;
         pss.segments[i].nodes = nodes;
         pss.segments[i].state = &pss;
+        memcpy(pss.segments[i].nextnodes, pss.state->nextnodes, sizeof(pss.state->nextnodes));
 
         pthread_create(&pss.segments[i].thread, NULL, buildgraphpar_thread, pss.segments + i);        
     }
