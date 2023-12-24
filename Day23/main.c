@@ -3,6 +3,10 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
+#if defined(__linux__)
+#include <sys/sysinfo.h>
+#endif
 // #define ENABLE_DEBUGLOG
 // #define ENABLE_DSTOPWATCH
 #include "../common/mmap.h"
@@ -247,6 +251,120 @@ static int64_t findmaxlen2slowly(const fdata* const d, slowstate* const state, c
     return newcost;
 }
 
+typedef struct parsetupstate
+{
+    slowstate* state;
+    uint32_t visited[8];
+    uint32_t visitedCount;
+} parsetupstate;
+
+typedef struct segment
+{
+    pthread_t thread;
+    const fdata* d;
+    slowstate* state;
+    astar_node* node;
+    int64_t cost;
+    uint64_t maxlen; // out
+} segment;
+
+static void* findmaxlenpar2_thread(void* vseg)
+{
+    segment* seg = (segment*)vseg;
+    seg->maxlen = findmaxlen2slowly(seg->d, seg->state, seg->node, seg->cost);
+    return NULL;
+}
+
+static int64_t findmaxlen2par_setup(const fdata* const d, parsetupstate* const state, const astar_node* const node, int64_t cost, int depth, int targetdepth)
+{
+    if (node->idx == d->finishIndex)
+        return cost;
+    
+    state->state->traversed[node->idx] = true;
+    state->visited[state->visitedCount++] = node->idx;
+    int64_t newcost = -1;
+    if (depth == targetdepth)
+    {
+        segment segments[4] = {0};
+        for (int i = 0; i < 4; ++i)
+        {
+            if (!node->next[i].node)
+                continue;
+            if (state->state->traversed[node->next[i].node->idx])
+                continue;
+
+            segments[i].d = d;
+            segments[i].node = node->next[i].node;
+            segments[i].cost = cost + node->next[i].cost;
+            segments[i].state = (slowstate*)calloc(1, sizeof(slowstate));
+            for (int vs = 0; vs < state->visitedCount; ++vs)
+                segments[i].state->traversed[state->visited[vs]] = true;
+
+            pthread_create(&segments[i].thread, NULL, findmaxlenpar2_thread, segments + i);
+        }
+        for (int i = 0; i < 4; ++i)
+        {
+            if (segments[i].node)
+                pthread_join(segments[i].thread, NULL);
+            int64_t ncost = 1 + segments[i].maxlen;
+            newcost = MAX(newcost, ncost);
+        }
+    }
+    else
+    {
+        for (int i = 0; i < 4; ++i)
+        {
+            if (!node->next[i].node)
+                continue;
+            if (state->state->traversed[node->next[i].node->idx])
+                continue;
+            int64_t ncost = 1 + findmaxlen2par_setup(d, state, node->next[i].node, cost + node->next[i].cost, depth + 1, targetdepth);
+            newcost = MAX(newcost, ncost);
+        }
+    }
+    --state->visitedCount;
+    state->state->traversed[node->idx] = false;
+    return newcost;
+}
+
+static int64_t findmaxlen2par(const fdata* const d, slowstate* const state, const astar_node* const node, int64_t cost)
+{
+#if defined(__linux__)
+    int nthreads = get_nprocs();
+#elif defined(_WIN32)
+    int nthreads = atoi(getenv("NUMBER_OF_PROCESSORS"));
+#else
+    return findmaxlen2slowly(d, state, node, cost);
+#endif
+    DEBUGLOG("nthreads %d\n", nthreads);
+
+    int targetdepth = 0;
+    switch (nthreads)
+    {
+        case 1:
+        case 2:
+            targetdepth = 1;
+            break;
+        case 3:
+        case 4:
+            targetdepth = 2;
+            break;
+        case 5:
+        case 6:
+        case 7:
+        case 8:
+            targetdepth = 3;
+            break;
+        default:
+            targetdepth = 4;
+            break;
+    }
+    DEBUGLOG("targetdepth %d\n", targetdepth);
+
+    parsetupstate pss = { .state = state, .visitedCount = 0 };
+    return findmaxlen2par_setup(d, &pss, node, cost, 0, targetdepth);
+}
+
 static int64_t findmaxlen2(fdata* d)
 {
     astar_node* nodes = (astar_node*)calloc(32768*4, sizeof(astar_node));
@@ -264,7 +382,8 @@ static int64_t findmaxlen2(fdata* d)
     // printgraph(d, &state, &curnode, 0);
     DSTOPWATCH_PRINT(graph);
 
-    return findmaxlen2slowly(d, &state, &curnode, 0);
+    return findmaxlen2par(d, &state, &curnode, 0);
+    // return findmaxlen2slowly(d, &state, &curnode, 0);
     // return calculate(d, &curnode, nodes + ((d->finishIndex << 2) | PD_DOWN));
 }
 
