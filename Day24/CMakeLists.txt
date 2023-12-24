@@ -1,0 +1,14 @@
+cmake_minimum_required(VERSION 3.21)
+cmake_policy(VERSION 3.21)
+
+set(CMAKE_C_STANDARD 11)
+
+project(Day24 C)
+
+add_executable(Day24 "main.c")
+
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -static-libgcc -static -march=native -mtune=native")
+set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3")
+set_target_properties(Day24 PROPERTIES LINK_SEARCH_START_STATIC ON)
+set_target_properties(Day24 PROPERTIES LINK_SEARCH_END_STATIC ON)
+target_link_options(Day24 PRIVATE "-static-libgcc")
