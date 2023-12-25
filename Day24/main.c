@@ -246,20 +246,18 @@ int main(int argc, char** argv)
 
     for (int cvx = -500; cvx < 500; ++cvx)
     {
-        // if (!xvalid[cvx + 500])
-        //    continue;
+        if (!xvalid[cvx + 500])
+           continue;
 
         for (int cvy = -500; cvy < 500; ++cvy)
         {
-            // if (!yvalid[cvy + 500])
-            //    continue;
+            if (!yvalid[cvy + 500])
+               continue;
 
             vec2i64 curp = {0};
 
             int64_t adjdx1 = stones[0].dx - cvx;
             int64_t adjdy1 = stones[0].dy - cvy;
-
-            int64_t t1, t2;
 
             for (int j = 1; j < stonesCount; ++j)
             {
@@ -273,10 +271,10 @@ int main(int argc, char** argv)
                     (vec2i64) { .x = stones[j].x, .y = stones[j].y },
                     (vec2i64) { .x = adjdx2, .y = adjdy2 });
 
-                t1 = (adjdx1 != 0) ? (p.x - stones[0].x) / adjdx1 : (adjdy1 != 0) ? (p.y - stones[0].y) / adjdy1 : INT64_MAX;
-                t2 = (adjdx2 != 0) ? (p.x - stones[j].x) / adjdx2 : (adjdy2 != 0) ? (p.y - stones[j].y) / adjdy2 : INT64_MAX;
-                bool t1future = t1 >= 0 && t1 != INT64_MAX;
-                bool t2future = t2 >= 0 && t2 != INT64_MAX;
+                double t1 = (adjdx1 != 0) ? (double)(p.x - stones[0].x) / adjdx1 : (double)(p.y - stones[0].y) / adjdy1;
+                double t2 = (adjdx2 != 0) ? (double)(p.x - stones[j].x) / adjdx2 : (double)(p.y - stones[j].y) / adjdy2;
+                bool t1future = !isinf(t1) && t1 >= 0;
+                bool t2future = !isinf(t2) && t2 >= 0;
 
                 // DEBUGLOG("t1 = %.3f, t2 = %.3f, t1f = %d, t2f = %d\n", t1, t2, t1future, t2future);
 
@@ -298,11 +296,56 @@ int main(int argc, char** argv)
 
             DEBUGLOG("match?? [%d,%d]\n", cvx, cvy);
 
-            DEBUGLOG("t1 = %ld, pz = %ld, dz = %ld\n", t1, stones[0].z, stones[0].dz);
-            int64_t z = stones[0].z + stones[0].dz * t1;
-            DEBUGLOG("rock origin [%ld,%ld,%ld]\n", curp.x, curp.y, z);
+            for (int cvz = -500; cvz < 500; ++cvz)
+            {
+                if (!zvalid[cvz + 500])
+                    continue;
 
-            sum2 = curp.x + curp.y + z;
+                vec2i64 zcurp = {0};
+
+                int64_t adjdz1 = stones[0].dz - cvz;
+                for (int j = 1; j < stonesCount; ++j)
+                {
+                    int64_t adjdx2 = stones[j].dx - cvx;
+                    int64_t adjdz2 = stones[j].dz - cvz;
+
+                    vec2i64 zp = intersection_xy_i(
+                        (vec2i64) { .x = stones[0].x, .y = stones[0].z },
+                        (vec2i64) { .x = adjdx1, .y = adjdz1 },
+                        (vec2i64) { .x = stones[j].x, .y = stones[j].z },
+                        (vec2i64) { .x = adjdx2, .y = adjdz2 });
+
+                    double zt1 = (adjdx1 != 0) ? (double)(zp.x - stones[0].x) / adjdx1 : (double)(zp.y - stones[0].z) / adjdz1;
+                    double zt2 = (adjdx2 != 0) ? (double)(zp.x - stones[j].x) / adjdx2 : (double)(zp.y - stones[j].z) / adjdz2;
+                    bool zt1future = !isinf(zt1) && zt1 >= 0;
+                    bool zt2future = !isinf(zt2) && zt2 >= 0;
+
+                    // DEBUGLOG("t1 = %.3f, t2 = %.3f, t1f = %d, t2f = %d\n", t1, t2, t1future, t2future);
+
+                    if (zp.x != INT64_MAX && zp.y != INT64_MAX && zt1future && zt2future)
+                    {
+                        // DEBUGLOG("xy intersection\n");
+                        if (zcurp.x == 0 && zcurp.y == 0)
+                            zcurp = zp;
+                        
+                        if (zcurp.x == zp.x && zcurp.y == zp.y)
+                            continue;
+                        // if (fabs(curp.x - p.x) < FLT_EPSILON && fabs(curp.y - p.y) < FLT_EPSILON)
+                        //     continue;
+                    }
+
+                    // DEBUGLOG("p (%ld,%ld) didn't match existing (%ld,%ld)\n", p.x, p.y, curp.x, curp.y);
+                    goto znextpos;
+                }
+
+                DEBUGLOG("match!! [%d,%d,%d]\n", cvx, cvy, cvz);
+            
+                DEBUGLOG("rock origin [%lld,%lld,%lld]\n", curp.x, curp.y, zcurp.y);
+
+                sum2 = curp.x + curp.y + zcurp.y;
+
+            znextpos:
+            }
 
         nextpos:
         }
