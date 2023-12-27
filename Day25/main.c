@@ -8,7 +8,7 @@
 #include "../common/mmap.h"
 #include "../common/print.h"
 #include "../common/stopwatch.h"
-#include "stoerwagner.h"
+#include "karger.h"
 
 #define isdigit(c) ((c) >= '0' && (c) <= '9')
 
@@ -51,8 +51,8 @@ int main(int argc, char** argv)
                 componentList[componentCount] = cn;
                 components[cn].listidx = componentCount++;
             }
-            components[c1].connections[components[c1].connectionsCount++] = cn;
-            components[cn].connections[components[cn].connectionsCount++] = c1;
+            components[c1].connections[components[c1].connectionsCount++] = components[cn].listidx;
+            components[cn].connections[components[cn].connectionsCount++] = components[c1].listidx;
         }
     }
 
@@ -64,25 +64,35 @@ int main(int argc, char** argv)
 
     DSTOPWATCH_START(part1);
 
-    sw_state* state = (sw_state*)malloc(sizeof(sw_state));
-    sw_init(state, componentCount);
+    ks_edgegraph* graph = (ks_edgegraph*)calloc(1, sizeof(ks_edgegraph));
+    graph->nvertices = componentCount;
+    graph->edgesCount = 0;
 
     for (int i = 0; i < componentCount; ++i)
     {
         for (int j = 0; j < components[componentList[i]].connectionsCount; ++j)
         {
-            uint32_t clidx = components[components[componentList[i]].connections[j]].listidx;
-            state->edge[i][clidx] = 1;
-            state->edge[clidx][i] = 1;
+            uint32_t clidx = components[componentList[i]].connections[j];
+            if (clidx > i)
+            {
+                graph->edges[graph->edgesCount++] = (ks_edge) { .head = i, .tail = clidx };
+                // graph->edges[graph->edgesCount++] = (ks_edge) { .head = clidx, .tail = i };
+            }
         }
     }
 
-    int mc = sw_perform(state);
-    int mincut = (mc & 0xFF);
-    int t = (mc >> 8);
-    DEBUGLOG("mincut = %d, t = %d (nodes x%d)\n", mincut, t, state->co_count[t]);
+    DEBUGLOG("going to perform\n");
+    ks_graphcut* gc = (ks_graphcut*)calloc(1, sizeof(ks_graphcut));
+    while (gc->cut_size != 3)
+    {
+        memset(gc, 0, sizeof(*gc));
+        ks_perform(graph, gc);
+    }
 
-    sum1 = state->co_count[t] * (componentCount - state->co_count[t]);
+    ks_psresult result = ks_graphcut_get_partition_sizes(gc);
+    DEBUGLOG("cut size 3 with sizes %zu, %zu\n", result.partition1Size, result.partition2Size);
+
+    sum1 = result.partition1Size * result.partition2Size;
 
     print_int64(sum1);
     DSTOPWATCH_END(part1);
