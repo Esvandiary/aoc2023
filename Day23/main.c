@@ -249,9 +249,9 @@ static void buildgraphpar_run(const fdata* const d, bool* const traversed, nextn
 
     for (int dir = 0; dir < 4; ++dir)
     {
-        const int32_t dataidx = idx_in_dir(d, curnode->idx, dir);
+        const uint32_t dataidx = (uint32_t)idx_in_dir(d, curnode->idx, dir);
         // DEBUGLOG("[%d,%d]    checking %s at (%d,%d)\n", dataY(*d, curnode->idx), dataX(*d, curnode->idx), pdnames[dir], dataY(*d, dataidx), dataX(*d, dataidx));
-        if (curnode->prevdir != PD_OPPOSITE(dir) && dataidx >= 0 && dataidx < d->size && isvalid2[d->data[dataidx]])
+        if (curnode->prevdir != PD_OPPOSITE(dir) && dataidx < d->size && isvalid2[d->data[dataidx]])
         {
             if (!nextnodes[dataidx][dir].idx)
                 nextnodes[dataidx][dir] = getnextnode(d, dataidx, dir, 0);
@@ -417,12 +417,13 @@ static void printgraph(const fdata* d, slowstate* state, astar_node* node, int d
     state->traversed[node->idx] = false;
 }
 
-static int64_t findmaxlen2slowly(const fdata* const d, slowstate* const state, const astar_node* const node, int64_t cost)
+static int64_t findmaxlen2slowly(const fdata* const d, slowstate* const state, const astar_node* const node, const int64_t cost)
 {
-    if (node->idx == d->finishIndex)
+    const uint32_t nidx = node->idx;
+    if (nidx == d->finishIndex)
         return cost;
     
-    state->traversed[node->idx] = true;
+    state->traversed[nidx] = true;
     int64_t newcost = -1;
     for (int i = 0; i < 4; ++i)
     {
@@ -430,11 +431,11 @@ static int64_t findmaxlen2slowly(const fdata* const d, slowstate* const state, c
             continue;
         if (state->traversed[node->next[i].node->idx])
             continue;
-        int64_t ncost = 1 + findmaxlen2slowly(d, state, node->next[i].node, cost + node->next[i].cost);
+        const int64_t ncost = findmaxlen2slowly(d, state, node->next[i].node, node->next[i].cost);
         newcost = MAX(newcost, ncost);
     }
-    state->traversed[node->idx] = false;
-    return newcost;
+    state->traversed[nidx] = false;
+    return 1 + cost + newcost;
 }
 
 typedef struct parworkstate
