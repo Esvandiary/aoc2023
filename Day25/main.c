@@ -90,7 +90,7 @@ int main(int argc, char** argv)
     }
 
     ks_psresult result = ks_graphcut_get_partition_sizes(gc);
-    DEBUGLOG("cut size 3 with sizes %zu, %zu\n", result.partition1Size, result.partition2Size);
+    DEBUGLOG("cut size 3 with sizes %u, %u\n", result.partition1Size, result.partition2Size);
 
     sum1 = result.partition1Size * result.partition2Size;
 

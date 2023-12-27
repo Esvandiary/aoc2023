@@ -90,15 +90,15 @@ typedef struct ks_graphcut
 
 typedef struct ks_psresult
 {
-    size_t partition1Size;
-    size_t partition2Size;
+    uint32_t partition1Size;
+    uint32_t partition2Size;
 } ks_psresult;
 
 typedef struct ks_presult
 {
     ks_psresult sizes;
-    node_t partition1[2044];
-    node_t partition2[2044];
+    node_t partition1[2046];
+    node_t partition2[2046];
 } ks_presult;
 
 static inline FORCEINLINE void ks_graphcut_init(ks_graphcut* gc, uint32_t n)
@@ -122,8 +122,8 @@ static inline ks_presult ks_graphcut_get_partitions(ks_graphcut* gc)
 
 static inline ks_psresult ks_graphcut_get_partition_sizes(ks_graphcut* gc)
 {
-    ks_psresult result = {0};
-    for (int i = 0; i < gc->uf.fullSubsetsCount; ++i)
+    ks_psresult result = { .partition1Size = 1, .partition2Size = 0 };
+    for (int i = 1; i < gc->uf.fullSubsetsCount; ++i)
     {
         if (gc->uf.subsets[i].id == gc->uf.subsets[0].id)
             ++result.partition1Size;
@@ -137,7 +137,7 @@ static void ks_perform(ks_edgegraph* graph, ks_graphcut* gc)
 {
     ks_graphcut_init(gc, graph->nvertices);
     int start = 0;
-    for (int m = graph->edgesCount - 1; gc->uf.subsetsCount != 2; ++start, --m)
+    for (int m = graph->edgesCount; gc->uf.subsetsCount != 2; ++start, --m)
     {
         ks_edge tmp = graph->edges[start];
         int midx = start + (rand() % m);
