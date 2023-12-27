@@ -124,7 +124,8 @@ static inline ks_psresult ks_graphcut_get_partition_sizes(const ks_graphcut* con
 {
     ks_psresult result = { .partition1Size = 1, .partition2Size = 0 };
     const node_t zeroid = gc->uf.subsets[0].id;
-    for (int i = 1; i < gc->uf.fullSubsetsCount; ++i)
+    const uint32_t scount = gc->uf.fullSubsetsCount;
+    for (int i = 1; i < scount; ++i)
     {
         if (gc->uf.subsets[i].id == zeroid)
             ++result.partition1Size;
@@ -140,8 +141,8 @@ static void ks_perform(ks_edgegraph* const graph, ks_graphcut* const gc)
     int start = 0;
     for (int m = graph->edgesCount; gc->uf.subsetsCount != 2; ++start, --m)
     {
+        const int midx = start + (rand() % m);
         const ks_edge tmp = graph->edges[start];
-        int midx = start + (rand() % m);
         graph->edges[start] = graph->edges[midx];
         graph->edges[midx] = tmp;
 

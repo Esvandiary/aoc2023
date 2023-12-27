@@ -72,7 +72,7 @@ int main(int argc, char** argv)
     {
         for (int j = 0; j < components[componentList[i]].connectionsCount; ++j)
         {
-            uint32_t clidx = components[componentList[i]].connections[j];
+            const uint32_t clidx = components[componentList[i]].connections[j];
             if (clidx > i)
             {
                 graph->edges[graph->edgesCount++] = (ks_edge) { .head = i, .tail = clidx };
