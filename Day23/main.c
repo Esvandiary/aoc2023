@@ -417,12 +417,13 @@ static void printgraph(const fdata* d, slowstate* state, astar_node* node, int d
     state->traversed[node->idx] = false;
 }
 
-static int64_t findmaxlen2slowly(const fdata* const d, slowstate* const state, const astar_node* const node, const int64_t cost)
+static int64_t findmaxlen2slowly(const fdata* const d, slowstate* const state, const astar_node* const node, int64_t cost)
 {
     const uint32_t nidx = node->idx;
     if (nidx == d->finishIndex)
         return cost;
     
+    ++cost;
     state->traversed[nidx] = true;
     int64_t newcost = -1;
     for (int i = 0; i < 4; ++i)
@@ -431,11 +432,11 @@ static int64_t findmaxlen2slowly(const fdata* const d, slowstate* const state, c
             continue;
         if (state->traversed[node->next[i].node->idx])
             continue;
-        const int64_t ncost = findmaxlen2slowly(d, state, node->next[i].node, node->next[i].cost);
+        const int64_t ncost = cost + findmaxlen2slowly(d, state, node->next[i].node, node->next[i].cost);
         newcost = MAX(newcost, ncost);
     }
     state->traversed[nidx] = false;
-    return 1 + cost + newcost;
+    return newcost;
 }
 
 typedef struct parworkstate
