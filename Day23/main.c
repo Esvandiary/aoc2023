@@ -426,15 +426,28 @@ static int64_t findmaxlen2slowly(const fdata* const d, slowstate* const state, c
     ++cost;
     state->traversed[nidx] = true;
     int64_t newcost = -1;
-    for (int i = 0; i < 4; ++i)
+
+    if (node->next[0].node && !state->traversed[node->next[0].node->idx])
     {
-        if (!node->next[i].node)
-            continue;
-        if (state->traversed[node->next[i].node->idx])
-            continue;
-        const int64_t ncost = cost + findmaxlen2slowly(d, state, node->next[i].node, node->next[i].cost);
-        newcost = MAX(newcost, ncost);
+        const int64_t ncost0 = cost + findmaxlen2slowly(d, state, node->next[0].node, node->next[0].cost);
+        newcost = MAX(newcost, ncost0);
     }
+    if (node->next[1].node && !state->traversed[node->next[1].node->idx])
+    {
+        const int64_t ncost1 = cost + findmaxlen2slowly(d, state, node->next[1].node, node->next[1].cost);
+        newcost = MAX(newcost, ncost1);
+    }
+    if (node->next[2].node && !state->traversed[node->next[2].node->idx])
+    {
+        const int64_t ncost2 = cost + findmaxlen2slowly(d, state, node->next[2].node, node->next[2].cost);
+        newcost = MAX(newcost, ncost2);
+    }
+    if (node->next[3].node && !state->traversed[node->next[3].node->idx])
+    {
+        const int64_t ncost3 = cost + findmaxlen2slowly(d, state, node->next[3].node, node->next[3].cost);
+        newcost = MAX(newcost, ncost3);
+    }
+
     state->traversed[nidx] = false;
     return newcost;
 }
@@ -493,33 +506,31 @@ static void findmaxlen2par_setup(const fdata* const d, parsetupstate* const stat
     int64_t newcost = -1;
     if (depth == targetdepth)
     {
+        #pragma GCC unroll 5
         for (int i = 0; i < 4; ++i)
         {
-            if (!node->next[i].node)
-                continue;
-            if (state->state->traversed[node->next[i].node->idx])
+            if (!node->next[i].node || state->state->traversed[node->next[i].node->idx])
                 continue;
             
-            int wsidx = state->workstatesCount;
+            const int wsidx = state->workstatesCount;
             state->workstates[wsidx].node = node->next[i].node;
             state->workstates[wsidx].cost = cost + node->next[i].cost;
             state->workstates[wsidx].state = (slowstate*)calloc(1, sizeof(slowstate));
             for (int vs = 0; vs < state->visitedCount; ++vs)
                 state->workstates[wsidx].state->traversed[state->visited[vs]] = true;
-
             ++state->workstatesCount;
         }
     }
     else
     {
-        for (int i = 0; i < 4; ++i)
-        {
-            if (!node->next[i].node)
-                continue;
-            if (state->state->traversed[node->next[i].node->idx])
-                continue;
-            findmaxlen2par_setup(d, state, node->next[i].node, cost + 1 + node->next[i].cost, depth + 1, targetdepth);
-        }
+        if (node->next[0].node && !state->state->traversed[node->next[0].node->idx])
+            findmaxlen2par_setup(d, state, node->next[0].node, cost + 1 + node->next[0].cost, depth + 1, targetdepth);
+        if (node->next[1].node && !state->state->traversed[node->next[1].node->idx])
+            findmaxlen2par_setup(d, state, node->next[1].node, cost + 1 + node->next[1].cost, depth + 1, targetdepth);
+        if (node->next[2].node && !state->state->traversed[node->next[2].node->idx])
+            findmaxlen2par_setup(d, state, node->next[2].node, cost + 1 + node->next[2].cost, depth + 1, targetdepth);
+        if (node->next[3].node && !state->state->traversed[node->next[3].node->idx])
+            findmaxlen2par_setup(d, state, node->next[3].node, cost + 1 + node->next[3].cost, depth + 1, targetdepth);
     }
     --state->visitedCount;
     state->state->traversed[node->idx] = false;
