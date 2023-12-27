@@ -249,9 +249,9 @@ static void buildgraphpar_run(const fdata* const d, bool* const traversed, nextn
 
     for (int dir = 0; dir < 4; ++dir)
     {
-        const int32_t dataidx = idx_in_dir(d, curnode->idx, dir);
+        const uint32_t dataidx = (uint32_t)idx_in_dir(d, curnode->idx, dir);
         // DEBUGLOG("[%d,%d]    checking %s at (%d,%d)\n", dataY(*d, curnode->idx), dataX(*d, curnode->idx), pdnames[dir], dataY(*d, dataidx), dataX(*d, dataidx));
-        if (curnode->prevdir != PD_OPPOSITE(dir) && dataidx >= 0 && dataidx < d->size && isvalid2[d->data[dataidx]])
+        if (curnode->prevdir != PD_OPPOSITE(dir) && dataidx < d->size && isvalid2[d->data[dataidx]])
         {
             if (!nextnodes[dataidx][dir].idx)
                 nextnodes[dataidx][dir] = getnextnode(d, dataidx, dir, 0);
