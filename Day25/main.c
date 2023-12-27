@@ -64,7 +64,7 @@ int main(int argc, char** argv)
 
     DSTOPWATCH_START(part1);
 
-    ks_edgegraph* graph = (ks_edgegraph*)calloc(1, sizeof(ks_edgegraph));
+    ks_edgegraph* const graph = (ks_edgegraph*)calloc(1, sizeof(ks_edgegraph));
     graph->nvertices = componentCount;
     graph->edgesCount = 0;
 
@@ -82,14 +82,14 @@ int main(int argc, char** argv)
     }
 
     DEBUGLOG("going to perform\n");
-    ks_graphcut* gc = (ks_graphcut*)calloc(1, sizeof(ks_graphcut));
+    ks_graphcut* const gc = (ks_graphcut*)calloc(1, sizeof(ks_graphcut));
     while (gc->cut_size != 3)
     {
         memset(gc, 0, sizeof(*gc));
         ks_perform(graph, gc);
     }
 
-    ks_psresult result = ks_graphcut_get_partition_sizes(gc);
+    const ks_psresult result = ks_graphcut_get_partition_sizes(gc);
     DEBUGLOG("cut size 3 with sizes %u, %u\n", result.partition1Size, result.partition2Size);
 
     sum1 = result.partition1Size * result.partition2Size;

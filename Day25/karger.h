@@ -33,7 +33,7 @@ typedef struct ks_unionfind
     uint32_t fullSubsetsCount;
 } ks_unionfind;
 
-static inline FORCEINLINE void ks_unionfind_init(ks_unionfind* uf, uint32_t n)
+static inline FORCEINLINE void ks_unionfind_init(ks_unionfind* const uf, const uint32_t n)
 {
     uf->fullSubsetsCount = n;
     uf->subsetsCount = n;
@@ -41,7 +41,7 @@ static inline FORCEINLINE void ks_unionfind_init(ks_unionfind* uf, uint32_t n)
         uf->subsets[i] = (ks_unionfind_subset) { .id = i, .size = 1 };
 }
 
-static inline node_t ks_unionfind_find(ks_unionfind* uf, node_t x)
+static inline node_t ks_unionfind_find(ks_unionfind* const uf, node_t x)
 {
     node_t root = x;
     while (root != uf->subsets[root].id)
@@ -57,7 +57,7 @@ static inline node_t ks_unionfind_find(ks_unionfind* uf, node_t x)
     return root;
 }
 
-static inline void ks_unionfind_merge(ks_unionfind* uf, node_t x, node_t y)
+static inline void ks_unionfind_merge(ks_unionfind* const uf, const node_t x, const node_t y)
 {
     const node_t i = ks_unionfind_find(uf, x);
     const node_t j = ks_unionfind_find(uf, y);
@@ -76,7 +76,7 @@ static inline void ks_unionfind_merge(ks_unionfind* uf, node_t x, node_t y)
     --uf->subsetsCount;
 }
 
-static inline FORCEINLINE bool ks_unionfind_connected(ks_unionfind* uf, node_t x, node_t y)
+static inline FORCEINLINE bool ks_unionfind_connected(ks_unionfind* const uf, const node_t x, const node_t y)
 {
     return ks_unionfind_find(uf, x) == ks_unionfind_find(uf, y);
 }
@@ -101,13 +101,13 @@ typedef struct ks_presult
     node_t partition2[2046];
 } ks_presult;
 
-static inline FORCEINLINE void ks_graphcut_init(ks_graphcut* gc, uint32_t n)
+static inline FORCEINLINE void ks_graphcut_init(ks_graphcut* const gc, const uint32_t n)
 {
     ks_unionfind_init(&gc->uf, n);
     gc->cut_size = 0;
 }
 
-static inline ks_presult ks_graphcut_get_partitions(ks_graphcut* gc)
+static inline ks_presult ks_graphcut_get_partitions(const ks_graphcut* const gc)
 {
     ks_presult result = {0};
     for (int i = 0; i < gc->uf.fullSubsetsCount; ++i)
@@ -120,12 +120,13 @@ static inline ks_presult ks_graphcut_get_partitions(ks_graphcut* gc)
     return result;
 }
 
-static inline ks_psresult ks_graphcut_get_partition_sizes(ks_graphcut* gc)
+static inline ks_psresult ks_graphcut_get_partition_sizes(const ks_graphcut* const gc)
 {
     ks_psresult result = { .partition1Size = 1, .partition2Size = 0 };
+    const node_t zeroid = gc->uf.subsets[0].id;
     for (int i = 1; i < gc->uf.fullSubsetsCount; ++i)
     {
-        if (gc->uf.subsets[i].id == gc->uf.subsets[0].id)
+        if (gc->uf.subsets[i].id == zeroid)
             ++result.partition1Size;
         else
             ++result.partition2Size;
@@ -133,13 +134,13 @@ static inline ks_psresult ks_graphcut_get_partition_sizes(ks_graphcut* gc)
     return result;
 }
 
-static void ks_perform(ks_edgegraph* graph, ks_graphcut* gc)
+static void ks_perform(ks_edgegraph* const graph, ks_graphcut* const gc)
 {
     ks_graphcut_init(gc, graph->nvertices);
     int start = 0;
     for (int m = graph->edgesCount; gc->uf.subsetsCount != 2; ++start, --m)
     {
-        ks_edge tmp = graph->edges[start];
+        const ks_edge tmp = graph->edges[start];
         int midx = start + (rand() % m);
         graph->edges[start] = graph->edges[midx];
         graph->edges[midx] = tmp;
@@ -153,3 +154,4 @@ static void ks_perform(ks_edgegraph* graph, ks_graphcut* gc)
             ++gc->cut_size;
     }
 }
+
